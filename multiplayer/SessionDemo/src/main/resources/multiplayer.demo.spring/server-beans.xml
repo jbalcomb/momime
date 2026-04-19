@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd" >
+	
+	<import resource="../com.ndg.multiplayer.server/session-server-beans.xml" />
+	<import resource="common-beans.xml" />
+
+	<!-- JMX -->
+	
+	<bean id="exporter" class="org.springframework.jmx.export.MBeanExporter">
+        <property name="assembler" ref="assembler"/>
+        <property name="namingStrategy" ref="namingStrategy"/>
+        <property name="autodetect" value="true"/>
+    </bean>
+
+    <bean id="jmxAttributeSource" class="org.springframework.jmx.export.annotation.AnnotationJmxAttributeSource"/>
+
+    <bean id="assembler" class="org.springframework.jmx.export.assembler.MetadataMBeanInfoAssembler">
+        <property name="attributeSource" ref="jmxAttributeSource"/>
+    </bean>
+
+    <bean id="namingStrategy" class="org.springframework.jmx.export.naming.MetadataNamingStrategy">
+        <property name="attributeSource" ref="jmxAttributeSource"/>
+    </bean>	
+
+	<!-- User registry -->
+	
+	<bean id="domImplementationRegistry" class="org.w3c.dom.bootstrap.DOMImplementationRegistry" factory-method="newInstance" />
+	
+	<bean id="multiplayerSessionXsdResourceResolver" class="com.ndg.multiplayer.session.MultiplayerSessionXsdResourceResolver">
+		<constructor-arg ref="domImplementationRegistry" />
+	</bean>
+	
+	<bean id="schemaFactoryFactory" class="com.ndg.utils.SchemaFactoryFactory" />
+	
+	<bean id="schemaFactory" class="javax.xml.validation.SchemaFactory" factory-bean="schemaFactoryFactory" factory-method="createSchemaFactory">
+		<constructor-arg ref="multiplayerSessionXsdResourceResolver" />
+	</bean>
+	
+	<bean id="userRegistrySchema" class="javax.xml.validation.Schema" factory-bean="schemaFactory" factory-method="newSchema">
+		<constructor-arg type="java.net.URL" value="/com.ndg.multiplayer.userregistry/MultiplayerSessionUserRegistry.xsd" />
+	</bean>
+	
+	<bean id="userRegistryJaxbContext" class="jakarta.xml.bind.JAXBContext" factory-method="newInstance">
+		<constructor-arg>
+    		<list>
+    			<value>com.ndg.multiplayer.userregistry.UserRegistry</value>
+    		</list>
+   		</constructor-arg>
+	</bean>
+
+	<bean id="userRegistryUnmarshaller" class="jakarta.xml.bind.Unmarshaller" factory-bean="userRegistryJaxbContext" factory-method="createUnmarshaller">
+		<property name="schema" ref="userRegistrySchema" />
+	</bean>
+	
+	<bean id="userRegistryMarshaller" class="jakarta.xml.bind.Marshaller" factory-bean="userRegistryJaxbContext" factory-method="createMarshaller">
+		<property name="schema" ref="userRegistrySchema" />
+	</bean>
+	
+	<bean id="configureUserRegistryMarshaller" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetObject" ref="userRegistryMarshaller" />
+		<property name="targetMethod" value="setProperty" />
+		<property name="arguments">
+			<list>
+				<value>jaxb.formatted.output</value>
+				<value type="java.lang.Boolean">true</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="userRegistry" class="com.ndg.multiplayer.server.users.MultiplayerSessionUserRegistryImpl" init-method="loadUserRegistry">
+		<property name="xmlFilename" value="ServerUserRegistry.xml" />
+		<property name="userRegistryUnmarshaller" ref="userRegistryUnmarshaller" />
+		<property name="userRegistryMarshaller" ref="userRegistryMarshaller" />
+		<property name="userRegistryObjectFactory" ref="defaultUserRegistryObjectFactory" />
+	</bean>
+	
+	<bean id="userRegistryPlayer" class="com.ndg.multiplayer.userregistry.Player" scope="prototype" />
+	
+	<!-- Singleton beans for server -->
+	
+	<bean id="multiplayerSessionDemoClientToServerObjectFactory" class="com.ndg.multiplayer.demo.server.MultiplayerSessionDemoClientToServerObjectFactory" />
+	
+	<bean id="demoServer" class="com.ndg.multiplayer.demo.server.DemoSessionServer" init-method="start">
+		<property name="port" value="12345" />
+		<property name="conversationTag" value="MultiplayerSessionDemo" />
+		<property name="compress" value="true" />
+		<property name="decompress" value="true" />
+		<property name="userRegistry" ref="userRegistry" />
+		<property name="clientToServerContext" ref="clientToServerJaxbContext" />
+		<property name="serverToClientContext" ref="serverToClientJaxbContext" />
+		<property name="savedGamesUnmarshaller" ref="savedGamesUnmarshaller" />
+		<property name="savedGamesMarshaller" ref="savedGamesMarshaller" />
+		<property name="savedGamesFolder" value="savedGames" />
+		<property name="zipSavedGames" value="true" />
+		<property name="clientToServerContextFactoryArray">
+			<array>
+				<ref bean="multiplayerSessionServerClientToServerObjectFactory" />
+				<ref bean="multiplayerSessionDemoClientToServerObjectFactory" />
+			</array>
+		</property>
+		<property name="sessionThreadFactory" ref="sessionThreadFactory" />
+	</bean>
+	
+	<!-- Saved games support -->
+
+	<bean id="savedGamesContext" class="jakarta.xml.bind.JAXBContext" factory-method="newInstance">
+		<constructor-arg>
+    		<list>
+    			<value>com.ndg.multiplayer.persistence.SavedGame</value>
+	   			<value>com.ndg.multiplayer.demo.DemoSessionDescription</value>
+    			<value>com.ndg.multiplayer.demo.DemoPlayerDescription</value>
+	   			<value>com.ndg.multiplayer.demo.DemoGeneralServerKnowledge</value>
+	   			<value>com.ndg.multiplayer.demo.DemoGeneralPublicKnowledge</value>
+	   			<value>com.ndg.multiplayer.demo.DemoPersistentPlayerPrivateKnowledge</value>
+	   			<value>com.ndg.multiplayer.demo.DemoPersistentPlayerPublicKnowledge</value>
+    		</list>
+   		</constructor-arg>
+	</bean>
+	
+	<bean id="savedGamesUnmarshaller" class="jakarta.xml.bind.Unmarshaller" factory-bean="savedGamesContext" factory-method="createUnmarshaller" />
+	
+	<bean id="savedGamesMarshaller" class="jakarta.xml.bind.Marshaller" factory-bean="savedGamesContext" factory-method="createMarshaller" />
+
+	<bean id="configureSavedGamesMarshaller" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetObject" ref="savedGamesMarshaller" />
+		<property name="targetMethod" value="setProperty" />
+		<property name="arguments">
+			<list>
+				<value>jaxb.formatted.output</value>
+				<value type="java.lang.Boolean">true</value>
+			</list>
+		</property>
+	</bean>
+	
+	<!-- Beans created each time a new session is started -->
+	
+	<bean id="gsk" class="com.ndg.multiplayer.demo.DemoGeneralServerKnowledge" scope="prototype">
+		<property name="operatingSystem" value="Windows 7" />
+	</bean>
+
+	<bean id="gpk" class="com.ndg.multiplayer.demo.DemoGeneralPublicKnowledge" scope="prototype">
+		<property name="weatherToday" value="Sunny" />
+	</bean>
+	
+	<bean id="sessionThread" class="com.ndg.multiplayer.demo.server.DemoSessionServerThread" scope="prototype">
+		<property name="generalServerKnowledge" ref="gsk" />
+		<property name="generalPublicKnowledge" ref="gpk" />
+		<property name="multiplayerSessionServerUtils" ref="multiplayerSessionServerUtils" />
+	</bean>
+
+	<bean id="sessionThreadFactory" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="com.ndg.multiplayer.demo.server.DemoSessionServerThreadFactory" />
+	</bean>	
+	
+</beans>

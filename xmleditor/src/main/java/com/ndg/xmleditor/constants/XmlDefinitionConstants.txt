@@ -1,0 +1,122 @@
+package com.ndg.xmleditor.constants;
+
+/**
+ * Tags used in the old .xmldefinition.xml files used by the Delphi XML editor 
+ */
+public class XmlDefinitionConstants
+{
+	/**
+	 * Main definition of each entity
+	 */
+	public static final String TAG_ENTITY_ENTITY = "entity";
+
+	/**
+	 * The XML tag of this entity
+	 */
+	public static final String TAG_ATTRIBUTE_ENTITY_TAG = "tag";
+	
+	/**
+	 * Singular description of an entity, used as the caption when editing a record from this entity
+	 */
+	public static final String TAG_VALUE_ENTITY_NAME_SINGULAR = "singular";
+
+	/**
+	 * Plural description of an entity, used as the text on the menu option if a top level entity,
+	 * or on the >> button if a child entity
+	 */
+	public static final String TAG_VALUE_ENTITY_NAME_PLURAL = "plural";
+	
+	/**
+	 * The name of the entity that this entity is a child of
+	 * If this value is not present, then it is a top level entity (so will appear directly on the edit menu or a submenu)
+	 */			
+	public static final String TAG_VALUE_ENTITY_DRILLS_DOWN_FROM = "drilldownfrom";
+	
+	/**
+	 * For top level entities, specifies if the option for the entity will appear on a submenu
+	 * If ommitted, the option will appear directly under the edit menu
+	 */
+	public static final String TAG_VALUE_ENTITY_APPEARS_ON_SUB_MENU = "submenu";
+	
+	/**
+	 * Indicates for a child entity whether the records are physically stored under the parent,
+	 * or the keys of the parent are stored in each child record (just like a regular foreign key reference) 
+	 */
+	public static final String TAG_VALUE_ENTITY_STORAGE_LOCATION = "storagelocation";
+	
+	/**
+	 * Value indicating that the records of this entity should be physically stored under its parent entity
+	 * @see #TAG_VALUE_ENTITY_STORAGE_LOCATION
+	 */
+	public static final String VALUE_ENTITY_STORAGE_LOCATION_PARENT = "parent";
+	
+	/**
+	 * Stores details about one field this entity has
+	 */
+	public static final String TAG_CHILD_ENTITY_FIELD = "field";
+
+	/**
+	 * The name/XML tag of this field
+	 */
+	public static final String TAG_ATTRIBUTE_FIELD_TAG = "tag";
+
+	/**
+	 * Indicates if this field is an attribute or an element
+	 */
+	public static final String TAG_VALUE_FIELD_STORAGE_LOCATION = "storagelocation";
+	
+	/**
+	 * Value indicating that this field is stored as an attribute
+	 * @see #TAG_VALUE_FIELD_STORAGE_LOCATION
+	 */
+	public static final String VALUE_FIELD_STORAGE_LOCATION_ATTRIBUTE = "attribute";
+
+	/**
+	 * Display label for a field
+	 */
+	public static final String TAG_VALUE_LABEL = "label";
+
+	/**
+	 * The width used to display this field in grids
+	 */
+	public static final String TAG_VALUE_GRID_WIDTH = "gridwidth";
+
+	/**
+	 * The name of the database that this foreign key reference to
+	 */
+	public static final String TAG_VALUE_FIELD_REFERS_TO_DATABASE = "referstodatabase";
+	
+	/**
+	 * The name of the entity that this field is a foreign key reference to
+	 */
+	public static final String TAG_VALUE_FIELD_REFERS_TO_ENTITY = "referstoentity";
+
+	/**
+	 * The name of the field on the referenced entity that this field is a foreign key reference to
+	 */
+	public static final String TAG_VALUE_FIELD_REFERS_TO_FIELD = "referstofield";
+	
+	/**
+	 * Controls which field(s) from the referenced entity appear in the grid
+	 */
+	public static final String TAG_VALUE_FIELD_REFERS_TO_DESCRIPTIONS_IN_GRID = "refersdescriptioningrid";
+	
+	/**
+	 * Value indicating that the foreign key itself is not displayed, only the fields from the referenced entity are displayed
+	 * e.g. display building names and hide the actual IDs
+	 * @see #TAG_VALUE_FIELD_REFERS_TO_DESCRIPTIONS_IN_GRID
+	 */
+	public static final String VALUE_REFERS_TO_DESCRIPTIONS_IN_GRID_REFERENCED_FIELDS_ONLY = "only";
+
+	/**
+	 * Tag for one field to display from the referenced entity
+	 */
+	public static final String TAG_VALUE_FIELD_REFERS_TO_DESCRIPTION = "referstodescription";
+	
+	/**
+	 * Prevent instatiation of this class
+	 */
+	private XmlDefinitionConstants ()
+	{
+	}
+}

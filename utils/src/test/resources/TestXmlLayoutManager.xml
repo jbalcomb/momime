@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xmllayout:xmlLayoutContainer xmlns:xmllayout="http://ndg.com/utils/swing/layoutmanagers/xmllayout">
+	<formWidth>800</formWidth>
+	<formHeight>600</formHeight>
+	<component name="ButtonOne">
+		<left>100</left>
+		<top>100</top>
+	</component>
+	<component name="ButtonTwo">
+		<left>100</left>
+		<top>200</top>
+		<width>400</width>
+	</component>
+	<component name="ButtonThree">
+		<left>100</left>
+		<top>300</top>
+		<width>180</width>
+		<height>80</height>
+		<horizontalAlignment>0.5</horizontalAlignment>
+	</component>
+</xmllayout:xmlLayoutContainer>

@@ -1,0 +1,1747 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jaxb="https://jakarta.ee/xml/ns/jaxb"
+	xmlns:mp="http://www.ndg.com/multiplayer/base" xmlns:mps="http://www.ndg.com/multiplayer/sessionbase" xmlns:map="http://www.ndg.com/map"
+	xmlns:momimecommon="http://momime/common/database"
+	xmlns:momimeclient="http://momime/client/database" xmlns:momimemsgs="http://momime/common/messages"
+	xmlns:momimestoc="http://momime/common/messages/servertoclient" targetNamespace="http://momime/common/messages/servertoclient"
+	jaxb:version="3.0">
+
+	<xsd:import namespace="http://www.ndg.com/map" />
+	<xsd:import namespace="http://www.ndg.com/multiplayer/base" />
+	<xsd:import namespace="http://www.ndg.com/multiplayer/sessionbase" />
+	<xsd:import namespace="http://momime/common/database" />
+	<xsd:import namespace="http://momime/common/messages" />
+	<xsd:import namespace="http://momime/client/database" />
+    
+    <xsd:annotation>
+    	<xsd:documentation>Defines all the messages sent from the MoM IME server to the client.</xsd:documentation>
+	</xsd:annotation>
+
+<!-- General -->
+
+	<xsd:element name="newGameDatabaseMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Message server sends to clients as they connect, to tell them what databases and pre-defined settings are available</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+		        	<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="newGameDatabase" type="momimeclient:newGameDatabase" />
+		        	</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="textPopupMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends to clients for warning/error messages</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+		        	<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="text" type="xsd:normalizedString" />
+		        	</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="broadcastChatMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server bounces this back to all clients for chat messages.
+PlayerName is not passed as a PlayerID so that chat messages can originate from the server.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+		        	<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="text" type="xsd:normalizedString" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerName" type="mps:playerName" />
+		        	</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+<!-- Join game process of picking wizard, photo, picks and so on -->
+
+	<xsd:element name="meetWizardMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Message server sends when we meet a wizard for the first time.
+We get sent our own wizard record when we pick which wizard we want to be.  We get sent the raiders/monsters records when the game starts.
+Other wizards' records we are only sent when we learn who they are.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+		        	<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="knownWizardDetails" type="momimemsgs:diplomacyWizardDetails" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="showAnimation" type="xsd:boolean" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="visibleRelationScoreID" type="momimecommon:relationScoreID">
+						    <xsd:annotation>
+		  						<xsd:documentation>The relation values inside knownWizardDetails are our opinion of the wizard being met.
+visibleRelation is their opinion of us, so the UI knows how red or green to draw the gargoyle eyes.  Unnecessary if showAnimation is not true.</xsd:documentation>
+		  					</xsd:annotation>
+		  				</xsd:element>						
+		        	</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="yourPhotoIsOkMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Message server sends to a player to let them know their choice of photo was OK (regardless of whether it was a
+standard wizard portrait or custom .ndgbmp), so proceed to the next stage of game setup.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="0" maxOccurs="1" name="standardPhotoID" type="momimecommon:wizardID" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="customPhoto" type="xsd:base64Binary" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="yourFlagColourIsOkMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Message server sends to a player to let them know their choice of flag colour was OK, so proceed to the next stage of game setup.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="flagColour" type="momimecommon:colour" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:complexType name="chooseInitialSpellsNowRank">
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="spellRankID" type="momimecommon:spellRankID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="freeSpellCount" type="momimecommon:spellCount" />
+		</xsd:sequence>
+	</xsd:complexType>
+	
+	<xsd:element name="chooseInitialSpellsNowMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to client to tell them how many spells of each rank they can choose for free at the start of the game.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+		        	<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="magicRealmID" type="momimecommon:pickID" />
+						<xsd:element minOccurs="1" maxOccurs="unbounded" name="spellRank" type="momimestoc:chooseInitialSpellsNowRank" />
+		        	</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="chooseYourRaceNowMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Message server sends to a player when they've finished picking free spells at the start of the game, since the
+client can't predict how many of what spell ranks and magic realms they need to pick.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="yourRaceIsOkMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Message server sends to a player to let them know their choice of race was OK.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+<!-- Sent just before game starts to inform players of each others' choices -->
+
+	<xsd:element name="replacePicksMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server updating client with the complete list of picks that a particular player now has; this could change because:
+1) They've chosen a standard wizard and the server is confirming what picks that standard wizard has;
+2) Chosen a custom wizard and server is confirming that the custom picks chosen are OK; or
+3) Found a book/retort from a node/lair/tower during the game.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerID" type="mps:playerID" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="pick" type="momimemsgs:playerPick" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="startGameMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Message server broadcasts when all game setup is complete and its time for clients to actually switch to the map screen</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+<!-- Turn system -->
+
+	<xsd:element name="addNewTurnMessagesMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this if additional messages are generated during a turn
+(e.g. casting an overland enchantment instantly, or capturing or losing a node)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="expireMessages" type="xsd:boolean" />
+						<xsd:element minOccurs="1" maxOccurs="unbounded" name="message" type="momimemsgs:newTurnMessageData" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="startSimultaneousTurnMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to all clients at the start of a new turn in a simultaneous turns game</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="turnNumber" type="momimecommon:turnNumber" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="expireMessages" type="xsd:boolean" />
+						<xsd:element minOccurs="1" maxOccurs="unbounded" name="message" type="momimemsgs:newTurnMessageData" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="setCurrentPlayerMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to all clients at the start of a new players' turn in a one-at-a-time turns game</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="currentPlayerID" type="mps:playerID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="turnNumber" type="momimecommon:turnNumber" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="expireMessages" type="xsd:boolean" />
+						<xsd:element minOccurs="1" maxOccurs="unbounded" name="message" type="momimemsgs:newTurnMessageData" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="onePlayerSimultaneousTurnDoneMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to all clients to notify that one player has finished allocating simultaneous movement
+(so the client can show a 'tick' next to them in the turn bar)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerID" type="mps:playerID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="updateTurnPhaseMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to all clients to notify when the turn reaches a new phase</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="turnPhase" type="momimemsgs:turnPhase" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+<!-- Economy and production -->
+
+	<xsd:element name="pendingSaleMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this in a simultaneous turns game to inform the city owner *only* that a building will be sold at the end of the turn.
+It can also be sent with buildingURN omitted, to cancel selling anything at the end of the turn.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="cityLocation" type="map:mapCoordinates3D" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="buildingURN" type="momimemsgs:buildingURN" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="updateGlobalEconomyMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to each client to tell them what their current production rates and storage are.
+
+This is a good place to send OverlandCastingSkillRemainingThisTurn to the client as well, since any instantly cast spells
+will result in mana being reduced so new GPVs will need to be sent anyway (and recalc'd in case the new instantly cast spell has some maintenance).
+
+Similarly the OverlandCastingSkillRemainingThisTurn value needs to be set on the client at the start of each turn, so why not include it in the GPV message.
+
+Also both stored mana and OverlandCastingSkillRemainingThisTurn being set on the client simultaneously is convenient for working out EffectiveCastingSkillRemainingThisTurn.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="overlandCastingSkillRemainingThisTurn" type="momimecommon:undoubledProductionValue" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="castingSkillRemainingThisCombat" type="momimecommon:undoubledProductionValue">
+						    <xsd:annotation>
+    							<xsd:documentation>At the start of a combat, the client sets the casting skill remaining for the wizard during that combat from the player's resource values.
+When the wizard casts a spell in combat, this message is resent with the castingSkillRemainingThisCombat filled in to say how much casting skill now remaing.
+Therefore this value being non-null also implies that the wizard cannot cast another spell during this combat turn - it is set to null in all other situations.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="1" name="spellCastThisCombatTurn" type="xsd:boolean">
+						    <xsd:annotation>
+    							<xsd:documentation>Usually castingSkillRemainingThisCombat being set implies the wizard cast a spell, and so cannot cast another
+spell this combat turn.  But it can also be set when their MP pool is reduced by Mana Leak.  So this value explicitly states whether they've cast a spell or not.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>						
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="resourceValue" type="momimemsgs:momResourceValue" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="taxRateChangedMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this back to clients who request a tax rate change to acknowledge that their request was OK</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="taxRateID" type="momimecommon:taxRateID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+<!-- Overland movement -->
+
+	<xsd:element name="erasePendingMovementsMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends to clients to tell them to wipe out their pending movement store, before new pending movements are about to be sent</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="endOfContinuedMovementMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends to client to tell them that it has finished processed their continued unit movement
+left over from the last turn, and so they can start to allocate new movement.
+This is only sent for one-at-a-time games - since with simultaneous turns movement, movement is at the end rather than the beginning of a turn.
+It is also only sent to the player whose turn it now is.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="pendingMovementMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to clients who request that units move further than they can reach in one turn, or in "simultaneous turns" mode.
+This is that tells the client where to draw the white arrows showing the unit stack's intended movement.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="pendingMovement" type="momimemsgs:pendingMovement" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="selectNextUnitToMoveOverlandMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>When the server is sending a sequence of messages resulting from a unit moving, it sends this to say that the
+sequence is over and the client should then ask for movement for the next unit.
+
+So typical sequence is: MoveUnit -> VisAreaChg -> MoveUnit -> VisAreaChg -> SelectNextUnitToMove</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+<!-- Combat -->
+
+	<xsd:element name="setUnitIntoOrTakeUnitOutOfCombatMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to client when a combat is over to take those units out of combat.
+For taking units out of combat, all the values will be omitted except for the unitURN.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="unitURN" type="momimemsgs:unitURN" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="combatLocation" type="map:mapCoordinates3D" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="combatPosition" type="map:mapCoordinates2D" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="combatHeading" type="map:mapDirection" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="combatSide" type="momimecommon:unitCombatSideID" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="summonedBySpellID" type="momimecommon:spellID">
+						    <xsd:annotation>
+    							<xsd:documentation>non-blank only when msg is being sent as a result of a new unit being summoned directly into combat
+(e.g. Phantom Warriors); in this case the client needs to know that it won't already have images created for the unit</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:complexType name="startCombatMessageUnit">
+	    <xsd:annotation>
+    		<xsd:documentation>Gives the details of the combat positioning of one unit involved in the combat.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="unitURN" type="momimemsgs:unitURN" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="combatPosition" type="map:mapCoordinates2D" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="combatHeading" type="map:mapDirection" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="combatSide" type="momimecommon:unitCombatSideID" />
+		</xsd:sequence>
+	</xsd:complexType>
+	
+	<xsd:element name="startCombatMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to the client when they are involved in a combat to start things off - this includes
+details of all the units in the combat and the terrain, so is probably the most complex multiplayer messages other than the massive FOW message.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="combatLocation" type="map:mapCoordinates3D" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="combatURN" type="momimemsgs:combatURN" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="combatTerrain" type="momimemsgs:mapAreaOfCombatTiles" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="unitPlacement" type="momimestoc:startCombatMessageUnit" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="updateCombatMapMessage">
+	    <xsd:annotation>
+			<xsd:documentation>Server sends this to the client when the combat terrain changes while a combat is in progress,
+e.g. as a result of casting Wall of Fire/Darkness in combat.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="combatLocation" type="map:mapCoordinates3D" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="combatTerrain" type="momimemsgs:mapAreaOfCombatTiles" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="setCombatPlayerMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to clients involved in particular combat to tell them whose turn it is next.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="combatLocation" type="map:mapCoordinates3D" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerID" type="mps:playerID" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="terrifiedUnitURN" type="momimemsgs:unitURN" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="moveUnitInCombatMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server breaks down client move requests into a series of directions and sends them back to the client.
+Either direction or teleportTo will be filled in, but not both.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="unitURN" type="momimemsgs:unitURN" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="moveFrom" type="map:mapCoordinates2D" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="direction" type="map:mapDirection" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="teleportTo" type="map:mapCoordinates2D" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="doubleCombatMovesLeft" type="momimecommon:integerMapDistance" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="reason" type="momimestoc:moveUnitInCombatReason" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="damageCalculationMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sending breakdown values for one line to appear in the damage calculation window</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="breakdown" type="momimestoc:damageCalculationData" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="combatEndedMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to client to say who won a combat, and whether a city was captured or razed as a result.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="combatLocation" type="map:mapCoordinates3D" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="winningPlayerID" type="mps:playerID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="heroItemCount" type="xsd:unsignedShort">
+						    <xsd:annotation>
+    							<xsd:documentation>Number of items held by heroes who died in the combat, regardless of which side they were on.  The winner gets all such items.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="1" maxOccurs="1" name="regeneratedCount" type="xsd:unsignedShort">
+						    <xsd:annotation>
+    							<xsd:documentation>Number of units with regeneration that were killed, but then their side won the combat so they came back to life.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="1" maxOccurs="1" name="undeadCreated" type="xsd:unsignedShort">
+						    <xsd:annotation>
+    							<xsd:documentation>Number of undead created because the winning player killed some of the losing player's units mainly with ghouls / life drain.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="1" maxOccurs="1" name="zombiesCreated" type="xsd:unsignedShort">
+						    <xsd:annotation>
+    							<xsd:documentation>Number of zombies created because the winning player has Zombie Mastery cast and normal units on either side died.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="1" name="captureCityDecisionID" type="momimemsgs:captureCityDecisionID">
+						    <xsd:annotation>
+    							<xsd:documentation>It the combat was at a city and the attacker won, specifies whether the attacker chose to capture or raze the city.
+Will be null if combat wasn't at a city, or if it was a city combat and the defender won.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="1" name="goldSwiped" type="momimecommon:undoubledProductionValue" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="goldFromRazing" type="momimecommon:undoubledProductionValue" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="populationKilled" type="xsd:unsignedShort" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="buildingsDestroyed" type="xsd:unsignedShort" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="fameChange" type="momimecommon:fame" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="askForCaptureCityDecisionMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to players who capture a city, so they show the "Capture or Raze" form (the decision will be blank at this point).</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="cityLocation" type="map:mapCoordinates3D" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="defendingPlayerID" type="mps:playerID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:complexType name="damageCalculationData">
+	    <xsd:annotation>
+    		<xsd:documentation>Class used to store breakdown values for all messages that appear in the damage calculation window.</xsd:documentation>
+		</xsd:annotation>
+	</xsd:complexType>
+
+	<xsd:complexType name="damageCalculationHeaderData">
+	    <xsd:annotation>
+    		<xsd:documentation>Header about how the source and target of an attack, before any attacks or counterattacks are rolled.
+Exactly one and only one of attackSkillID or attackSpellID will be filled in to denote what initiated the attack;
+or all 3 being blank indicates this is a counterattack in response to a melee attack.
+(Usually a counterattack won't have its own header, but there are situations where it can, e.g. in response to previous First Strike header).</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimestoc:damageCalculationData">
+				<xsd:sequence>
+					<xsd:element minOccurs="0" maxOccurs="1" name="attackerUnitURN" type="momimemsgs:unitURN" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="attackerPlayerID" type="mps:playerID">
+					    <xsd:annotation>
+    						<xsd:documentation>Attacker can be null if attack is from an event like Great Meteor, in which case will get an eventID instead.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="1" name="eventID" type="momimecommon:eventID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="defenderUnitURN" type="momimemsgs:unitURN">
+					    <xsd:annotation>
+    						<xsd:documentation>Defender will be left null if the attack is hitting multiple defenders, e.g. Flame Strike.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="1" name="attackSkillID" type="momimecommon:unitSkillID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="attackSpellID" type="momimecommon:spellID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="existingCurse" type="xsd:boolean">
+					    <xsd:annotation>
+    						<xsd:documentation>Set to true when this isn't a new "attack", but the defender trying to shake off a curse they already have (Stasis).</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+	
+	<xsd:complexType name="damageCalculationAttackData">
+	    <xsd:annotation>
+    		<xsd:documentation>Breakdown about how a number of potential hits was calculated.
+Exactly one and only one of attackSkillID or attackSpellID will be filled in to denote what initiated the attack;
+or all 3 being blank indicates this is a counterattack in response to a melee attack.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimestoc:damageCalculationData">
+				<xsd:sequence>
+					<xsd:element minOccurs="0" maxOccurs="1" name="attackerUnitURN" type="momimemsgs:unitURN" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="attackerPlayerID" type="mps:playerID">
+					    <xsd:annotation>
+    						<xsd:documentation>Attacker can be null if attack is from an event like Great Meteor, in which case will get an eventID instead.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="1" name="eventID" type="momimecommon:eventID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="attackSkillID" type="momimecommon:unitSkillID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="requiredUnitSkillID" type="momimecommon:unitSkillID">
+				<xsd:annotation>
+        			<xsd:documentation>Can generally be used when a second skill is required to trigger a particular step, but mostly this is used for
+things like axe heroes with Touch Dispels Evil where there is a touch component of their thrown attack as well as a touch component of their melee attack.
+Gets sent to the client so the damage breakdown can distinguish between Touch Dispels Evil (Thrown Weapons) and Touch Dispels Evil (Melee)</xsd:documentation>
+				</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="1" name="attackSpellID" type="momimecommon:spellID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="damageTypeID" type="momimecommon:damageTypeID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="storedDamageTypeID" type="momimecommon:storedDamageTypeID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="damageResolutionTypeID" type="momimecommon:damageResolutionTypeID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="attackerFigures" type="momimecommon:figureCount" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="attackStrength" type="momimecommon:unitSkillValue" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="potentialHits" type="momimecommon:unitSkillValue">
+					    <xsd:annotation>
+    						<xsd:documentation>Figures * Melee/Ranged attack stat, i.e. maximum possible hits if every one hits and none get blocked.
+This can be null for unusual kinds of attack, e.g. Warp Wood.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="damageCalculationDefenceData">
+	    <xsd:annotation>
+    		<xsd:documentation>Breakdown about how damage from a number of potential hits was applied to a unit.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimestoc:damageCalculationData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="defenderUnitURN" type="momimemsgs:unitURN" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="defenderUnitOwningPlayerID" type="mps:playerID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="defenderFigures" type="momimecommon:figureCount" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="damageTypeID" type="momimecommon:damageTypeID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="storedDamageTypeID" type="momimecommon:storedDamageTypeID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="damageResolutionTypeID" type="momimecommon:damageResolutionTypeID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="unmodifiedDefenceStrength" type="momimecommon:unitSkillValue" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="modifiedDefenceStrength" type="momimecommon:unitSkillValue">
+					    <xsd:annotation>
+    						<xsd:documentation>May be equal to unmodifiedDefenceStrength, halved, or zero depending on the damage type.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="1" name="chanceToHit" type="momimecommon:unitSkillValue" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="chanceToDefend" type="momimecommon:unitSkillValue" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="tenTimesAverageDamage" type="momimecommon:unitSkillValue" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="tenTimesAverageBlock" type="momimecommon:unitSkillValue" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="actualHits" type="momimecommon:unitSkillValue">
+					    <xsd:annotation>
+    						<xsd:documentation>How many of potentialHits actually strike the unit, i.e. chanceToHit% chance per each hit of potentialDamage.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="1" name="blurredHits" type="momimecommon:unitSkillValue">
+					    <xsd:annotation>
+    						<xsd:documentation>If the unit is blurred, the number of hits that were dodged.  0 = has blur but none were dodged.
+null = doesn't have Blur, or the attacking unit has Immunity to Illusions and so negates the effect of Blur.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="1" maxOccurs="1" name="finalHits" type="momimecommon:unitSkillValue">
+					    <xsd:annotation>
+    						<xsd:documentation>Final HP loss the defender suffers, after some of actualHits may have been blocked and hence do no damage.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="1" name="existingCurse" type="xsd:boolean">
+					    <xsd:annotation>
+    						<xsd:documentation>If making resistance roll against a curse, whether we're trying to avoid being cursed to begin with,
+or trying to shake off an existing curse (Stasis).</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+	
+	<xsd:complexType name="damageCalculationWallData">
+	    <xsd:annotation>
+    		<xsd:documentation>Breakdown about a roll made with Wall Crusher skill.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimestoc:damageCalculationData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="wreckTileChance" type="xsd:unsignedShort">
+					    <xsd:annotation>
+    						<xsd:documentation>Chance of the tile being wrecked, e.g. 4 means 1 in 4 chance = 25%.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="1" maxOccurs="1" name="wrecked" type="xsd:boolean" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="damageCalculationConfusionData">
+	    <xsd:annotation>
+    		<xsd:documentation>Lets players involved in a combat know what confusion effect a unit rolled this turn.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimestoc:damageCalculationData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="unitURN" type="momimemsgs:unitURN" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="confusionEffect" type="momimemsgs:confusionEffect" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="castingPlayerID" type="mps:playerID" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+<!-- Magic -->
+
+	<xsd:element name="fullSpellListMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to client to tell them the status of every spell in the game.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="spellResearchStatus" type="momimemsgs:spellResearchStatus" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="updateRemainingResearchCostMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to client to update the number of research points they have left to spend before getting a particular spell.
+This isn't used to RemainingResearchCost = 0 when research is completed, because when we complete researching a spell, the server also has to
+randomly pick the 8 further choices of what to research next.  So in that situation we just send the whole fullSpellListMessage again.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="remainingResearchCost" type="momimecommon:spellResearchCost" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="spellResearchChangedMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this back to a client who requested a change in research to let them know the change was OK.
+This isn't used to set research to 'nothing', so safe to assume that SpellID is non-blank.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+<!-- Spells -->
+
+	<xsd:element name="overlandCastQueuedMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to players trying to cast overland spells that are too big to cast instantly.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="heroItem" type="momimecommon:heroItem" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="variableDamage" type="momimecommon:unitSkillValue" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="removeQueuedSpellMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this if a spell has finished casting to tell the client to remove it from the queue.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="queuedSpellIndex" type="momimemsgs:listIndex" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="updateManaSpentOnCastingCurrentSpellMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to client to let them know progress on casting big spells.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="manaSpentOnCastingCurrentSpell" type="momimecommon:spellCastingCost" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+<!-- Fog of war messages - Note these are declared both as messages in their own right,
+and just as types so that they can be included in the massive fogOfWarVisibleAreaChangedMessage -->
+	
+	<xsd:complexType name="updateTerrainMessageData">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to the client to tell them the map scenery.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="mapLocation" type="map:mapCoordinates3D" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="terrainData" type="momimemsgs:overlandMapTerrainData" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="updateTerrainMessage">
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="data" type="momimestoc:updateTerrainMessageData" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:complexType name="updateCityMessageData">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to the client to tell them the map scenery.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="mapLocation" type="map:mapCoordinates3D" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="cityData" type="momimemsgs:overlandMapCityData" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="updateCityMessage">
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="data" type="momimestoc:updateCityMessageData" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="addBuildingMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to clients to tell them about a building (or multiple) added to a city.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="0" maxOccurs="1" name="buildingsCreatedFromSpellID" type="momimecommon:spellID">
+						    <xsd:annotation>
+			    				<xsd:documentation>This is used to say when buildings have been added by casting spells (Wall of Stone, Summoning Circle
+or Move Fortress), however this is only ever set as the building is added (i.e. sent as an individual message), never if the building has simply
+come into view (i.e. sent as part of 'visible area changed').</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="1" name="buildingCreationSpellCastByPlayerID" type="mps:playerID" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="building" type="momimemsgs:memoryBuilding" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="destroyBuildingMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to clients to tell them about a building destroyed (or sold) from a city.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="updateBuildingSoldThisTurn" type="xsd:boolean">
+						    <xsd:annotation>
+			    				<xsd:documentation>This will be true for buildings that are sold (rather than destroyed), so the client knows to not allow another sale this turn</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="1" name="buildingsDestroyedBySpellID" type="momimecommon:spellID" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="buildingDestructionSpellCastByPlayerID" type="mps:playerID" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="buildingDestructionSpellLocation" type="map:mapCoordinates3D">
+						    <xsd:annotation>
+			    				<xsd:documentation>If we cast Earthquake and it fails to actually destroy any buildings, the client still needs to know where the
+attempt was made so it can display the animation and clean up the targeting NTM.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="buildingURN" type="momimemsgs:buildingURN" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="addOrUpdateUnitMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to clients to tell them about a new unit added to the map, or an update to an existing unit.
+Can add them in bulk as part of fogOfWarVisibleAreaChanged for when units come into view.  Sends the complete unit object so the client can just add it as-is.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="memoryUnit" type="momimemsgs:memoryUnit" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="killUnitMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to notify of units dying, being dismissed, or going out of our visible range.  The status indicates the
+new status for the unit; a status of null means the client should remove it completely.  NB. There is a lot of logic behind working out the correct
+statuses to send, and different clients may be sent different statuses for the same kill.
+
+e.g. a hero dying must be updated to status DEAD on the client of its owner since it may be later resurrected; but everyone else can remove it completely.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="unitURN" type="momimemsgs:unitURN" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="newStatus" type="momimemsgs:unitStatusID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="addOrUpdateMaintainedSpellMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to notify clients of new maintained spells cast, an update to an existing spell, or those that have newly come into view.
+Sends the complete spell object so the client can just add it as-is.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="maintainedSpell" type="momimemsgs:memoryMaintainedSpell" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="newlyCast" type="xsd:boolean">
+						    <xsd:annotation>
+    							<xsd:documentation>Whether the spell is newly cast (and so show animation for it), or has merely come into our view.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="1" maxOccurs="1" name="spellTransient" type="xsd:boolean">
+						    <xsd:annotation>
+    							<xsd:documentation>True for spells that have no lasting effect (e.g. Earth Lore or Word of Recall), but we still need to notify the client so
+they can show an animation for it and sort out the target spell NTM.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="switchOffMaintainedSpellMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to notify clients of cancelled maintained spells, or those that have gone out of view.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="spellURN" type="momimemsgs:spellURN" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="addOrUpdateCombatAreaEffectMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to notify clients of new CAEs, or those that have newly come into view.
+Besides the info we remember, the client also needs the spell ID for animation purposes..</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="memoryCombatAreaEffect" type="momimemsgs:memoryCombatAreaEffect" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="cancelCombatAreaEffectMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this to notify clients of cancelled CAEs, or those that have gone out of view.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="combatAreaEffectURN" type="momimemsgs:combatAreaEffectURN" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:complexType name="fogOfWarStateMessageData">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends to client to let them know changes in the area of the map they can see.
+This is never sent as a message by itself, hence has no element wrapper defined.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="mapLocation" type="map:mapCoordinates3D" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="state" type="momimemsgs:fogOfWarStateID" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="fogOfWarVisibleAreaChangedMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server sends this main message to update the client on changes in their fog of war area and what units, buildings, spells, CAEs, etc. they can see.
+It basically comprises 0..n of most of the other types of message defined above, sent together so that the client processes them in a single transaction/locked update.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="0" maxOccurs="1" name="triggeredFrom" type="momimecommon:description">
+						    <xsd:annotation>
+    							<xsd:documentation>This is just a text string logged in the debug logs on the client, has no real effect.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="terrainUpdate" type="momimestoc:updateTerrainMessageData" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="cityUpdate" type="momimestoc:updateCityMessageData" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="addBuilding" type="momimemsgs:memoryBuilding" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="destroyBuilding" type="momimemsgs:buildingURN" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="addOrUpdateUnit" type="momimemsgs:memoryUnit" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="killUnit" type="momimemsgs:unitURN" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="addMaintainedSpell" type="momimemsgs:memoryMaintainedSpell" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="switchOffMaintainedSpell" type="momimemsgs:spellURN" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="addCombatAreaEffect" type="momimemsgs:memoryCombatAreaEffect" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="cancelCombaAreaEffect" type="momimemsgs:combatAreaEffectURN" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="fogOfWarUpdate" type="momimestoc:fogOfWarStateMessageData" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+<!-- Fog of war-type updates, but that can't be included in the big fogOfWarVisibleAreaChanged message -->
+	
+	<xsd:element name="moveUnitStackOverlandMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server breaks down client move requests into a series of directions and sends them back to the client.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="moveFrom" type="map:mapCoordinates3D" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="moveTo" type="map:mapCoordinates3D" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="freeAfterMoving" type="xsd:boolean">
+						    <xsd:annotation>
+    							<xsd:documentation>Set if this move will result in this unit stack going out of visible range -
+in that case the client shows the animation, then the units disappear.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="1" maxOccurs="unbounded" name="unitURN" type="momimemsgs:unitURN" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:complexType name="applyDamageMessageUnit">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores the damage taken by a single defender in an attack.
+Some attacks may hit multiple defenders at once, e.g. flame strike.  These have to be sent to the client as a single bulk message detailing all the
+hit units at once, so that the animation shows all units being hit at once, rather than the first being hit, then the second, and so on.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="defenderUnitURN" type="momimemsgs:unitURN" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="defenderDirection" type="map:mapDirection">
+			    <xsd:annotation><xsd:documentation>May be null if the damage is an overland attack and the unit isn't even in combat, so has no direction.</xsd:documentation></xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="overrideSpellID" type="momimecommon:spellID">
+			    <xsd:annotation>
+					<xsd:documentation>Some attacks not only hit multiple defenders at once, but hit each defender with a different spell effect.  Mainly for Call Chaos.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="defenderUnitDamage" type="momimemsgs:unitDamage" />
+		</xsd:sequence>
+	</xsd:complexType>
+	
+	<xsd:element name="applyDamageMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Message server sends to all clients when an attack takes place, this might damage the attacker and/or the defender.
+For the players actually involved in the combat, this message will also generate the animation to show the units swinging their swords at each other.
+This also gets sent to players not involved in the combat who can see one or other unit; in that situation its possible that an outside observer can see one of the units but
+not the other - in that situation one of the UnitURNs (and other values associated with that unit) will all be left null, this is why every value is optional.
+
+It is also possible that there may be no attacking unit.
+
+Exactly one and only one of attackSkillID or attackSpellID will be filled in to denote what initiated the attack.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="yourCombat" type="xsd:boolean">
+						    <xsd:annotation>
+						    	<xsd:documentation>Whether it is a combat the client the msg it being sent to is involved in or not.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="1" name="attackerUnitURN" type="momimemsgs:unitURN" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="attackerDirection" type="map:mapDirection" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="attackerDoubleCombatMovesLeft" type="momimecommon:integerMapDistance" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="attackerUnitDamage" type="momimemsgs:unitDamage" />
+						
+						<xsd:element minOccurs="0" maxOccurs="1" name="attackSkillID" type="momimecommon:unitSkillID" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="attackSpellID" type="momimecommon:spellID" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="wreckTilePosition" type="map:mapCoordinates2D">
+						    <xsd:annotation><xsd:documentation>Filled in if the tile was attacked by Wall Crusher skill (whether successful or not).</xsd:documentation></xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="1" name="wrecked" type="xsd:boolean">
+						    <xsd:annotation><xsd:documentation>Filled in only if Wall Crusher skill successfully wrecked the tile.</xsd:documentation></xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="defenderUnit" type="momimestoc:applyDamageMessageUnit" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="planeShiftUnitStackMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>A unit stack tried to jump from one plane to the other, maybe successfully or not.  If failed then moveTo = moveFrom.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="moveFrom" type="map:mapCoordinates3D" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="moveTo" type="map:mapCoordinates3D" />
+						<xsd:element minOccurs="1" maxOccurs="unbounded" name="unitURN" type="momimemsgs:unitURN" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+<!-- Hero items, new for 0.9.7 -->
+
+	<xsd:element name="addUnassignedHeroItemMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Adds a hero item to the unassigned items in the player's bank vault, either because
+they just created it, found it as a treasure reward, or moved it there from a hero who was using it.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="heroItem" type="momimemsgs:numberedHeroItem" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="removeUnassignedHeroItemMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Removes a hero item from the unassigned items in the player's bank vault, either because
+they're destroying it on the anvil, or moving it from there to a hero to make use of it.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="heroItemURN" type="momimemsgs:heroItemURN" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+<!-- Treasure rewards, new for 0.9.7 -->
+
+	<xsd:element name="treasureRewardMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores all the treasure gained from capturing a node/lair/tower.
+This is purely informational, like NTMs.  Other messages (e.g. add hero item, full spell list) will be sent containing the actual updates.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="0" maxOccurs="1" name="tileTypeID" type="momimecommon:tileTypeID">
+						    <xsd:annotation>
+	  							<xsd:documentation>Exactly one of tileTypeID, mapFeatureID and buildingID will be filled in, indicating what type of node/lair/tower the reward was from.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="1" name="mapFeatureID" type="momimecommon:mapFeatureID">
+						    <xsd:annotation>
+	  							<xsd:documentation>Exactly one of tileTypeID, mapFeatureID and buildingID will be filled in, indicating what type of node/lair/tower the reward was from.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="1" name="buildingID" type="momimecommon:buildingID">
+						    <xsd:annotation>
+	  							<xsd:documentation>Exactly one of tileTypeID, mapFeatureID and buildingID will be filled in, indicating what type of node/lair/tower the reward was from.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="heroItem" type="momimemsgs:numberedHeroItem" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="spellID" type="momimecommon:spellID" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="resource" type="momimecommon:productionTypeAndUndoubledValue" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="pick" type="momimecommon:pickAndQuantity" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="prisoner" type="momimestoc:treasureRewardPrisoner" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:complexType name="treasureRewardPrisoner">
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="prisonerUnitURN" type="momimemsgs:unitURN" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="unitAddBumpType" type="momimemsgs:unitAddBumpTypeID" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+<!-- Dispel spells, new for 0.9.7.3 -->
+
+	<xsd:complexType name="dispelMagicResult">
+	    <xsd:annotation>
+    		<xsd:documentation>The result of attempting to dispel one spell.  See dispelMagicResultsMessage for more info.
+Either spellID or combatAreaEffectID will be filled in but never both.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="0" maxOccurs="1" name="owningPlayerID" type="mps:playerID">
+			    <xsd:annotation>
+					<xsd:documentation>This can be null when trying to return a warped node to normal.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="combatAreaEffectID" type="momimecommon:combatAreaEffectID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="castingCost" type="momimecommon:spellCastingCost" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="chance" type="xsd:double" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="dispelled" type="xsd:boolean" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="dispelMagicResultsMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Lists the results of casting a Dispel Magic-type spell.  Includes a list of each spell that the wizard tried to dispel and
+whether the dispel succeeded or not for each.  This gets sent to the wizard who cast the Dispel Magic-type spell, as well as the owner of each spell.
+e.g. if wizard A tries to dispel spells cast by both wizards B + C, then wizard A will receive this message listing both results, but wizards B + C
+will receive this message only containing the 1 result applicable to them.
+
+Note this message is informational only, the client need take no action based on the dispelled spells other than to inform the player.
+Each successfully dispelled spell will separately send out the usual FOW updates to actually remove it.
+(That is why I don't put the spellURN here, because the spell would already have been removed before the client receives this message.)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="castingPlayerID" type="mps:playerID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+						<xsd:element minOccurs="1" maxOccurs="unbounded" name="dispelMagicResult" type="momimestoc:dispelMagicResult" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:complexType name="counterMagicResult">
+	    <xsd:annotation>
+    		<xsd:documentation>The result of one attempt to counter a spell from even being cast.
+Either spellID or combatAreaEffectID will be filled in but never both.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="0" maxOccurs="1" name="owningPlayerID" type="mps:playerID">
+			    <xsd:annotation>
+		    		<xsd:documentation>The player who owns the CAE that is trying to counter the spell.  For nodes will be null.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="combatAreaEffectID" type="momimecommon:combatAreaEffectID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="dispellingPower" type="momimecommon:spellCastingCost" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="chance" type="xsd:double" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="dispelled" type="xsd:boolean" />
+		</xsd:sequence>
+	</xsd:complexType>
+	
+	<xsd:element name="counterMagicResultsMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Lists the results of attempting to cast a spell in the presence of CAEs that may counter and block it.
+Includes a list of each CAE that attmpted to counter it and whether the counter succeeded or not for each.  This gets sent to both players in combat
+regardless of which one was actually trying to cast, or whether the counter is coming from a Counter Magic spell they cast or a node aura.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="castingPlayerID" type="mps:playerID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+						<xsd:element minOccurs="1" maxOccurs="unbounded" name="counterMagicResult" type="momimestoc:counterMagicResult" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="showSpellAnimationMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Tells the client to display a spell animation.  There are no other side effects, so whatever
+damage or updates to the game world take place as a result of the spell must be sent separately.
+
+Currently this is only used for SPECIAL_COMBAT_SPELLS but I will probably move more spell animations to this model in future,
+where the animation and game world updates are sent in separate messages.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="castingPlayerID" type="mps:playerID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="castInCombat" type="xsd:boolean" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="combatTargetUnitURN" type="momimemsgs:unitURN" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="combatTargetLocation" type="map:mapCoordinates2D" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:complexType name="renderCityData">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores enough details for CityViewPanel to be able to draw a city.  Usually this info is derived from the player's FOW knowledge
+about what buildings etc they can see (or have seen), but the Spell of Return is a special case where we get to see an animation for a city that we
+potentially know nothing about.  So making a single data structure that's used for both means CityViewPanel doesn't need to operate on 2 different data sets.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="cityOwnerID" type="mps:playerID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="planeNumber" type="momimecommon:planeNumber" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="citySizeID" type="momimecommon:citySizeID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="cityName" type="momimecommon:description" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="adjacentTileTypeID" type="momimecommon:tileTypeID">
+			    <xsd:annotation>
+		    		<xsd:documentation>List of all unique tileTypeIDs from the city cell itself as well as the 8 cells around it.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="buildingID" type="momimecommon:buildingID">
+			    <xsd:annotation>
+		    		<xsd:documentation>List of buildings in the city, not including the Wizard's Fortress and Summoning Circle which are about to be added.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="rubbleBuildingID" type="momimecommon:buildingID">
+			    <xsd:annotation>
+		    		<xsd:documentation>List of buildings to show as rubble instead of the actual building.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="citySpellEffectID" type="momimecommon:citySpellEffectID" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="updateWizardStateMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server announces to everybody when a wizard gets banished or casts Spell of Return.  Clients record the update (updates
+wizardState against the player's public data) and show the animation for it, either of wizard getting banished from their fortress, or of casting spell of return.
+So this is what drives the Spell of Return animation on the client, not the AddBuildingMessage that normally would for casting Summoning Circle or similar.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="banishedPlayerID" type="mps:playerID">
+						    <xsd:annotation>
+	  							<xsd:documentation>The wizard who is being banished, or who is returning.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="1" name="banishingPlayerID" type="mps:playerID">
+						    <xsd:annotation>
+	  							<xsd:documentation>The wizard who is doing the banishing.  May be raiders.  Omitted for spell of return or if the wizard banished themselves by being in a shrinking outpost.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="1" maxOccurs="1" name="wizardState" type="momimemsgs:wizardState" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="renderCityData" type="momimestoc:renderCityData">
+						    <xsd:annotation>
+	  							<xsd:documentation>Only filled in when message is to notify about someone casting Spell of Return.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:complexType name="powerBaseHistoryPlayer">
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="playerID" type="mps:playerID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="zeroCount" type="xsd:unsignedShort">
+			    <xsd:annotation>
+		    		<xsd:documentation>Number of zeroes to add, prior to adding the real value below.  Used when player has missed turns because of Time Stop.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="1" maxOccurs="1" name="powerBase" type="momimecommon:undoubledProductionValue" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="addPowerBaseHistoryMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server broadcasts history of all wizards' power base each turn to show on the Historian screen.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="player" type="momimestoc:powerBaseHistoryPlayer" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="playAnimationMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server telling the client to play an animation about a significant game event, like casting Spell of Mastery.
+Unlike updateWizardStateMessage, the animation has no bearing on the game and pushes no data updates whatsoever, the client just plays the anim and that's it.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="animationID" type="momimestoc:animationID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerID" type="mps:playerID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+<!-- Offers, new for 0.9.9.1 -->
+
+	<xsd:element name="offerAcceptedMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Client requested to accept an offer to hire a hero, units or buy an item, and server processed it OK.
+The actual new unit(s) or hero item will be sent separately.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+		        	<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="offerURN" type="momimemsgs:offerURN" />
+		        	</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+<!-- Detect Magic / Spell Blast, new for 0.9.9.6 -->
+
+	<xsd:complexType name="overlandCastingInfo">
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="playerID" type="mps:playerID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="spellID" type="momimecommon:spellID">
+			    <xsd:annotation>
+		    		<xsd:documentation>Can be null if the wizard is not casting any overland spell right now.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="manaSpentOnCasting" type="momimecommon:spellCastingCost">
+			    <xsd:annotation>
+		    		<xsd:documentation>Will be null for Detect Magic, and filled in for Spell Blast.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="overlandCastingInfoMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Server telling us what spells all wizards are currently casting overland.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+		        	<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="ourSpellID" type="momimecommon:spellID">
+						    <xsd:annotation>
+					    		<xsd:documentation>This is the spell that WE cast, which is the reason the server is telling us what everyone else is casting.
+So this is either the spellID for Detect Magic or Spell Blast.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="overlandCastingInfo" type="momimestoc:overlandCastingInfo" />
+		        	</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+<!-- Random events, new for 0.9.9.9 -->
+
+	<xsd:complexType name="attackCitySpellResult">
+	    <xsd:annotation>
+    		<xsd:documentation>This is here because the only thing that its used for is RandomEventMessage.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="populationKilled" type="xsd:unsignedShort" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="unitsKilled" type="xsd:unsignedShort" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="buildingsDestroyed" type="xsd:unsignedShort" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="randomEventMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Notifies all clients about a random event starting or ending.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="eventID" type="momimecommon:eventID" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="targetPlayerID" type="mps:playerID" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="citySizeID" type="momimecommon:citySizeID" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="cityName" type="momimecommon:description" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="mapFeatureID" type="momimecommon:mapFeatureID" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="heroItemName" type="momimecommon:description" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="goldAmount" type="momimecommon:undoubledProductionValue" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="conjunction" type="xsd:boolean">
+						    <xsd:annotation>
+					    		<xsd:documentation>Typically this message just notifies about the event but any updates will be sent separately.
+Exception to this is if conjunction is true, it tells the client to update (or clear) their stored conjunctionEventID.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="1" maxOccurs="1" name="ending" type="xsd:boolean" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="attackCitySpellResult" type="momimestoc:attackCitySpellResult" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+<!-- Diplomacy, new for 1.4 -->
+
+	<xsd:element name="diplomacyMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Notifying a player of a proposal, offer or demand to another wizard, the exact nature of which is set by the action value.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+		        	<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="talkFromPlayerID" type="mps:playerID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="action" type="momimemsgs:diplomacyAction" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="visibleRelationScoreID" type="momimecommon:relationScoreID">
+						    <xsd:annotation>
+		  						<xsd:documentation>For human players, only set on initiating talking.  AI players can send this with every response, if you propose something that makes them happy/mad.</xsd:documentation>
+		  					</xsd:annotation>
+		  				</xsd:element>						
+						<xsd:element minOccurs="0" maxOccurs="1" name="otherPlayerID" type="mps:playerID">
+						    <xsd:annotation>
+		  						<xsd:documentation>Required for PROPOSE_DECLARE_WAR_ON_OTHER_WIZARD and PROPOSE_BREAK_ALLIANCE_WITH_OTHER_WIZARD.</xsd:documentation>
+		  					</xsd:annotation>
+		  				</xsd:element>						
+						<xsd:element minOccurs="0" maxOccurs="1" name="offerGoldAmount" type="momimecommon:undoubledProductionValue">
+						    <xsd:annotation>
+		  						<xsd:documentation>Required for OFFER_GOLD.</xsd:documentation>
+		  					</xsd:annotation>
+		  				</xsd:element>
+		  				<xsd:element minOccurs="0" maxOccurs="1" name="offerSpellID" type="momimecommon:spellID">
+						    <xsd:annotation>
+		  						<xsd:documentation>Required for OFFER_SPELL and PROPOSE_EXCHANGE_SPELL.</xsd:documentation>
+		  					</xsd:annotation>
+		  				</xsd:element>						
+		  				<xsd:element minOccurs="0" maxOccurs="1" name="requestSpellID" type="momimecommon:spellID">
+						    <xsd:annotation>
+		  						<xsd:documentation>Required for PROPOSE_EXCHANGE_SPELL.</xsd:documentation>
+		  					</xsd:annotation>
+		  				</xsd:element>						
+						<xsd:element minOccurs="0" maxOccurs="1" name="cityName" type="momimecommon:description">
+						    <xsd:annotation>
+		  						<xsd:documentation>The city they're mad about might already have been destroyed so need to include its name.</xsd:documentation>
+		  					</xsd:annotation>
+						</xsd:element>
+		        	</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="pactMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>Updates the pact between two wizards.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+		        	<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="updatePlayerID" type="mps:playerID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="pactPlayerID" type="mps:playerID" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="pactType" type="momimemsgs:pactType" />
+		        	</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="tradeableSpellsMessage">
+	    <xsd:annotation>
+    		<xsd:documentation>During diplomacy, we can try to give a spell to another player, or try to trade spells with another player.
+This message tells the client which spells they know and which the other wizard can learn.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+		        	<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="talkFromPlayerID" type="mps:playerID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="action" type="momimemsgs:diplomacyAction">
+						    <xsd:annotation>
+		  						<xsd:documentation>The action that we need the tradeable spell list for - either GIVE_SPELL, GIVE_SPELL_BECAUSE_THREATENED or PROPOSE_EXCHANGE_SPELL.</xsd:documentation>
+		  					</xsd:annotation>
+						</xsd:element>
+		  				<xsd:element minOccurs="0" maxOccurs="1" name="requestSpellID" type="momimecommon:spellID">
+						    <xsd:annotation>
+		  						<xsd:documentation>If PROPOSE_EXCHANGE_SPELL and requestSpellID isn't filled in, then its the proposer picking the spell they want from the other wizard.
+If requestSpellID is filled in, message is being sent to the other wizard to see what spell they'll offer in return.</xsd:documentation>
+		  					</xsd:annotation>
+		  				</xsd:element>						
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="tradeableSpellID" type="momimecommon:spellID">
+						    <xsd:annotation>
+		  						<xsd:documentation>If action is GIVE_SPELL or GIVE_SPELL_BECAUSE_THREATENED then this is a list of spells we can give to the other wizard.
+If action is PROPOSE_EXCHANGE_SPELL then this is a list of spells we can request that the other wizard gives to us.</xsd:documentation>
+		  					</xsd:annotation>
+						</xsd:element>
+		        	</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+<!--  Enums -->
+
+	<xsd:simpleType name="animationID">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="W"><xsd:annotation>
+				<xsd:documentation>You won the game - spinning worlds animation</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="WON" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="S"><xsd:annotation>
+				<xsd:documentation>Started casting Spell of Mastery</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="STARTED_SPELL_OF_MASTERY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="F"><xsd:annotation>
+				<xsd:documentation>Finished casting Spell of Mastery</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="FINISHED_SPELL_OF_MASTERY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="moveUnitInCombatReason">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="M"><xsd:annotation>
+				<xsd:documentation>Manual (or AI) control</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="MANUAL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="C"><xsd:annotation>
+				<xsd:documentation>Confusion - moved randomly</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="CONFUSION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="V"><xsd:annotation>
+				<xsd:documentation>Magic Vortex - moving its 3 random moves each turn</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="MAGIC_VORTEX" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+</xsd:schema>

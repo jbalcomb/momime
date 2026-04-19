@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jaxb="https://jakarta.ee/xml/ns/jaxb"
+	xmlns:momimecltconfig="http://momime/client/config" xmlns:momimecommon="http://momime/common/database" targetNamespace="http://momime/client/config"
+	jaxb:version="3.0">
+
+	<xsd:import namespace="http://momime/common/database"/>
+
+	<xsd:element name="momImeClientConfig">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element minOccurs="1" maxOccurs="1" name="compressDataSentToServer" type="xsd:boolean" />
+				<xsd:element minOccurs="1" maxOccurs="1" name="decompressDataReceivedFromServer" type="xsd:boolean" />
+				<xsd:element minOccurs="1" maxOccurs="1" name="graphicsXmlFilename" type="momimecltconfig:filename" />
+				<xsd:element minOccurs="1" maxOccurs="1" name="languagesXmlFilename" type="momimecltconfig:filename" />
+				<xsd:element minOccurs="1" maxOccurs="1" name="chosenLanguage" type="momimecommon:language" />
+				<xsd:element minOccurs="1" maxOccurs="1" name="consistencyCheckLevel" type="momimecltconfig:consistencyCheckLevel" />
+				
+				<!-- Overland map options -->
+				<xsd:element minOccurs="1" maxOccurs="1" name="overlandUpscaledTerrain" type="xsd:boolean">
+					<xsd:annotation>
+						<xsd:documentation>True to Simbey's upscaled overland terrain tiles.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element minOccurs="1" maxOccurs="1" name="overlandUpscaledUnits" type="xsd:boolean">
+					<xsd:annotation>
+						<xsd:documentation>True to Simbey's upscaled overland units.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element minOccurs="1" maxOccurs="1" name="combatUpscaledTerrain" type="xsd:boolean">
+					<xsd:annotation>
+						<xsd:documentation>True to Simbey's upscaled combat terrain tiles.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element minOccurs="1" maxOccurs="1" name="combatUpscaledUnits" type="xsd:boolean">
+					<xsd:annotation>
+						<xsd:documentation>True to Simbey's upscaled combat units.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element minOccurs="1" maxOccurs="1" name="cityViewUpscaledCivilians" type="xsd:boolean">
+					<xsd:annotation>
+						<xsd:documentation>True to Simbey's upscaled civilians.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element minOccurs="1" maxOccurs="1" name="overlandSmoothTerrain" type="xsd:boolean">
+					<xsd:annotation>
+						<xsd:documentation>True to use the full terrain tileset so e.g. hills flow into each other and coastline is drawn between ocean and land; false to use only "blocky" tiles.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element minOccurs="1" maxOccurs="1" name="overlandSmoothTextures" type="xsd:boolean">
+					<xsd:annotation>
+						<xsd:documentation>When zooming in the overland map, this controls how the textures are scaled up.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element minOccurs="1" maxOccurs="1" name="overlandShowPartialFogOfWar" type="xsd:boolean">
+					<xsd:annotation>
+						<xsd:documentation>Whether to slightly darken terrain which we have seen, but cannot see now, so we're just remembering what we saw there before.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element minOccurs="1" maxOccurs="1" name="overlandSmoothFogOfWar" type="xsd:boolean">
+					<xsd:annotation>
+						<xsd:documentation>True to use the full FOW tileset so the FOW border slightly enchroaches into tiles we can see and so looks smooth; false to use hard square edges.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element minOccurs="1" maxOccurs="1" name="overlandShowOurBorder" type="xsd:boolean" />
+				<xsd:element minOccurs="1" maxOccurs="1" name="overlandShowEnemyBorders" type="xsd:boolean" />
+				<xsd:element minOccurs="1" maxOccurs="1" name="overlandAnimateUnitsMoving" type="xsd:boolean" />
+				
+				<!-- Combat map options -->
+				<xsd:element minOccurs="1" maxOccurs="1" name="combatSmoothTerrain" type="xsd:boolean">
+					<xsd:annotation>
+						<xsd:documentation>True to use the full terrain tileset so e.g. ridges and dark areas run together; false to use only "blocky" combat tiles.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element minOccurs="1" maxOccurs="1" name="newShadows" type="xsd:boolean">
+					<xsd:annotation>
+						<xsd:documentation>True use new separate shadow images; false to use original unit images that have shadows as part of the image.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				
+				<!-- Unit info display options -->
+				<xsd:element minOccurs="1" maxOccurs="1" name="showHeroPortraits" type="xsd:boolean" />
+				<xsd:element minOccurs="1" maxOccurs="1" name="displayUnitSkillsAsAttributes" type="momimecommon:unitSkillTypeID" />
+
+				<!-- Spell book display options -->
+				<xsd:element minOccurs="1" maxOccurs="1" name="spellBookViewMode" type="momimecltconfig:spellBookViewMode" />
+				
+				<!-- Debug options -->
+				<xsd:element minOccurs="1" maxOccurs="1" name="debugShowURNs" type="xsd:boolean" />
+				<xsd:element minOccurs="1" maxOccurs="1" name="debugShowEdgesOfMap" type="xsd:boolean" />
+
+				<xsd:element minOccurs="0" maxOccurs="unbounded" name="windowPosition" type="momimecltconfig:windowPosition" />
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:complexType name="windowPosition">
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="left" type="xsd:int" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="top" type="xsd:int" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="width" type="xsd:int">
+				<xsd:annotation>
+					<xsd:documentation>Only for windows that are resizeable, which is basically OverlandMapUI and that's it.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="height" type="xsd:int" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="visible" type="xsd:boolean">
+				<xsd:annotation>
+					<xsd:documentation>Ommitted for windows where the game flow controls whether the window is opened or not rather than the player
+(OverlandMapUI, CombatUI, CreateArtifactUI, DiplomacyUI).</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="windowID" type="momimecltconfig:windowID" use="required" />
+	</xsd:complexType>
+
+	<xsd:simpleType name="path">
+		<xsd:restriction base="xsd:normalizedString" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="filename">
+		<xsd:restriction base="xsd:normalizedString" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="windowID">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="OVERLAND_MAP" />
+			<xsd:enumeration value="TAX_RATE" />
+			<xsd:enumeration value="MAGIC_SLIDERS" />
+			<xsd:enumeration value="ALCHEMY" />
+			<xsd:enumeration value="SPELL_BOOK" />
+			<xsd:enumeration value="QUEUED_SPELLS" />
+			<xsd:enumeration value="CITIES" />
+			<xsd:enumeration value="NEW_TURN_MESSAGES" />
+			<xsd:enumeration value="ADVISORS" />
+			<xsd:enumeration value="COMBAT" />
+			<xsd:enumeration value="DAMAGE_CALCULATIONS" />
+			<xsd:enumeration value="WIZARDS" />
+			<xsd:enumeration value="CREATE_ARTIFACT" />
+			<xsd:enumeration value="HERO_ITEMS" />
+			<xsd:enumeration value="HISTORY" />
+			<xsd:enumeration value="DIPLOMACY" />
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="spellBookViewMode">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="STANDARD" />
+			<xsd:enumeration value="COMPACT" />
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="consistencyCheckLevel">
+	    <xsd:annotation>
+    		<xsd:documentation>0 = none, 1 = animations only, 2 = exhaustive.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort">
+			<xsd:minInclusive value="0" />
+			<xsd:maxInclusive value="2 "/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+</xsd:schema>

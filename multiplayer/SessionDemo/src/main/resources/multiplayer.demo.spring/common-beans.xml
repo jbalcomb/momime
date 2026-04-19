@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd" >
+
+	<!-- Common beans used both by the multiplayer demo client and server -->
+	
+	<bean id="clientToServerJaxbContext" class="jakarta.xml.bind.JAXBContext" factory-method="newInstance">
+		<constructor-arg>
+    		<list>
+    			<value>com.ndg.multiplayer.base.ClientToServerMessage</value>
+    			<value>com.ndg.multiplayer.sessionbase.CreateAccount</value>
+    			<value>com.ndg.multiplayer.sessionbase.Login</value>
+    			<value>com.ndg.multiplayer.sessionbase.Logout</value>
+    			<value>com.ndg.multiplayer.sessionbase.RequestSessionList</value>
+    			<value>com.ndg.multiplayer.sessionbase.NewSession</value>
+    			<value>com.ndg.multiplayer.sessionbase.JoinSession</value>
+    			<value>com.ndg.multiplayer.sessionbase.LeaveSession</value>
+    			
+    			<value>com.ndg.multiplayer.sessionbase.BrowseSavedGames</value>
+    			<value>com.ndg.multiplayer.sessionbase.BrowseSavePoints</value>
+    			<value>com.ndg.multiplayer.sessionbase.LoadGame</value>
+    			<value>com.ndg.multiplayer.sessionbase.DeleteSavedGame</value>
+
+    			<value>com.ndg.multiplayer.demo.CtosChat</value>
+    			<value>com.ndg.multiplayer.demo.RequestUpdateHumanPlayerToAI</value>
+    			
+    			<value>com.ndg.multiplayer.demo.DemoSessionDescription</value>
+    			<value>com.ndg.multiplayer.demo.DemoPlayerDescription</value>
+    		</list>
+   		</constructor-arg>
+	</bean>
+
+	<bean id="serverToClientJaxbContext" class="jakarta.xml.bind.JAXBContext" factory-method="newInstance">
+		<constructor-arg>
+    		<list>
+    			<value>com.ndg.multiplayer.base.ServerToClientMessage</value>
+    			<value>com.ndg.multiplayer.demo.StocChat</value>
+    			<value>com.ndg.multiplayer.demo.DemoSessionDescription</value>
+    			<value>com.ndg.multiplayer.demo.DemoPlayerDescription</value>
+    			<value>com.ndg.multiplayer.sessionbase.CreateAccountSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.CreateAccountFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.LoginSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.LoginFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.LogoutSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.LogoutFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.RequestSessionListSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.RequestSessionListFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.JoinSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.JoinFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.PlayerLeft</value>
+    			<value>com.ndg.multiplayer.sessionbase.AdditionalPlayerJoined</value>
+    			<value>com.ndg.multiplayer.sessionbase.SessionEnding</value>
+    			<value>com.ndg.multiplayer.sessionbase.KickedByAnotherLogin</value>
+    			<value>com.ndg.multiplayer.sessionbase.LeaveSessionFailed</value>
+
+    			<value>com.ndg.multiplayer.sessionbase.BrowseSavedGamesSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.BrowseSavedGamesFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.BrowseSavePointsSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.BrowseSavePointsFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.LoadGameFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.DeleteSavedGameSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.DeleteSavedGameFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.UpdateHumanPlayerToAI</value>
+
+    			<value>com.ndg.multiplayer.demo.DemoGeneralServerKnowledge</value>
+    			<value>com.ndg.multiplayer.demo.DemoGeneralPublicKnowledge</value>
+    			<value>com.ndg.multiplayer.demo.DemoPersistentPlayerPrivateKnowledge</value>
+    			<value>com.ndg.multiplayer.demo.DemoPersistentPlayerPublicKnowledge</value>
+    			<value>com.ndg.multiplayer.demo.DemoTransientPlayerPrivateKnowledge</value>
+    			<value>com.ndg.multiplayer.demo.DemoTransientPlayerPublicKnowledge</value>
+    		</list>
+   		</constructor-arg>
+	</bean>
+
+</beans>

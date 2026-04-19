@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:referenced="http://www.ndg.com/xmleditor/testReferenced" xmlns:nxe="http://www.ndg.com/xmleditor/1.0.0"
+	xmlns:test="http://www.ndg.com/xmleditor/test" targetNamespace="http://www.ndg.com/xmleditor/test">
+
+	<!-- Example XSD where the top level element has an inlined complex type -->
+
+	<xsd:element name="mainElement">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="referenced:referencedElement" />
+				<xsd:element minOccurs="0" maxOccurs="1" name="optionalSingle" type="xsd:int" />
+				<xsd:element minOccurs="0" maxOccurs="unbounded" name="optionalChild" type="test:optionalChild" />
+				<xsd:element minOccurs="1" maxOccurs="1" name="mandatorySingle" type="xsd:int" />
+				<xsd:element minOccurs="1" maxOccurs="unbounded" name="mandatoryChild" type="xsd:int" />
+				
+				<xsd:element minOccurs="0" maxOccurs="unbounded" name="topLevelRef" type="test:topLevelRefType" />
+				<xsd:element minOccurs="0" maxOccurs="unbounded" name="container" type="test:containerType">
+					<xsd:key name="childLevelRefPK">
+						<xsd:selector xpath="childLevelRef" />
+						<xsd:field xpath="@childLevelRefCode" />
+					</xsd:key>
+					<xsd:keyref refer="test:childLevelRefPK" name="childWithReferencesFKchildLevelRef">
+						<xsd:selector xpath="childWithReferences" />
+						<xsd:field xpath="childLevelRefValue" />
+					</xsd:keyref>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+
+		<!-- Primary keys -->
+
+		<xsd:key name="topLevelRefPK">
+			<xsd:selector xpath="topLevelRef" />
+			<xsd:field xpath="@topLevelRefCode" />
+		</xsd:key>
+
+		<!-- Foreign keys -->
+
+		<xsd:keyref refer="test:topLevelRefPK" name="childWithReferencesFKtopLevelRef">
+			<xsd:selector xpath="container/childWithReferences" />
+			<xsd:field xpath="topLevelRefValue" />
+		</xsd:keyref>
+	</xsd:element>
+	
+	<!-- The complex types here are also used for a lot of other unit tests -->
+	<!-- NB. I've put Type on the end of a lot of these, which I don't normally do, to prove that the methods correctly use the element name vs. the complexType name -->
+
+	<xsd:complexType name="optionalChild" nxe:singular="Optional Child" nxe:plural="Optional Children" nxe:submenu="Some sub menu">
+        <xsd:annotation>
+        	<xsd:documentation>Here's a long description</xsd:documentation>
+        </xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="elementOne" type="xsd:int" nxe:showreferencedcolumns="false" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="elementTwo" type="xsd:int" nxe:showmaincolumn="false" nxe:label="Element two label" nxe:gridwidth="80" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="elementList" type="xsd:int" />
+		</xsd:sequence>
+		<xsd:attribute name="attributeOne" type="xsd:int" use="required" nxe:showreferencedcolumns="false" />
+		<xsd:attribute name="attributeTwo" type="xsd:int" nxe:showmaincolumn="false" nxe:label="Attribute two label" nxe:gridwidth="90" />
+	</xsd:complexType>
+
+	<xsd:complexType name="mandatoryChild">
+		<xsd:complexContent>
+			<xsd:extension base="test:optionalChild">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="elementThree" type="xsd:int" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="elementFour" type="xsd:int">
+						<xsd:annotation>
+							<xsd:appinfo>
+								<nxe:showreferencedfield>showReferencedFieldOne</nxe:showreferencedfield>
+								<nxe:showreferencedfield>showReferencedFieldTwo</nxe:showreferencedfield>
+								<nxe:showreferencedfield />
+							</xsd:appinfo>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="unbounded" name="anotherElementList" type="xsd:int" />
+				</xsd:sequence>
+				<xsd:attribute name="attributeThree" type="xsd:int" use="required" />
+				<xsd:attribute name="attributeFour" type="xsd:int">
+					<xsd:annotation>
+						<xsd:appinfo>
+							<nxe:showreferencedfield>showReferencedFieldThree</nxe:showreferencedfield>
+							<nxe:showreferencedfield>showReferencedFieldFour</nxe:showreferencedfield>
+							<nxe:showreferencedfield />
+						</xsd:appinfo>
+					</xsd:annotation>
+				</xsd:attribute>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="elementRefChild">
+		<xsd:sequence>
+			<xsd:element ref="referenced:referencedElement" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="topLevelRefType">
+		<xsd:annotation>
+			<xsd:documentation>So there is only one list of these; the FK refers to the same list regardless of the container</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="topLevelRefCode" type="xsd:normalizedString" use="required" />
+	</xsd:complexType>
+
+	<xsd:complexType name="childLevelRefType">
+		<xsd:annotation>
+			<xsd:documentation>So there are multiple lists of these, one per container, and the FK refers to the list scoped under the correct container</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="childLevelRefCode" type="xsd:normalizedString" use="required" />
+	</xsd:complexType>
+
+	<xsd:complexType name="containerType">
+		<xsd:sequence>
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="childLevelRef" type="test:childLevelRefType" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="childWithReferences" type="test:childWithReferencesType" />
+		</xsd:sequence>
+	</xsd:complexType>
+	
+	<xsd:complexType name="childWithReferencesType">
+		<xsd:sequence>
+			<xsd:element minOccurs="0" maxOccurs="1" name="topLevelRefValue" type="xsd:normalizedString" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="childLevelRefValue" type="xsd:normalizedString" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:simpleType name="exampleSimpleType">
+		<xsd:restriction base="xsd:normalizedString" />
+	</xsd:simpleType>
+	
+</xsd:schema>

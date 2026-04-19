@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd" >
+	
+	<import resource="../com.ndg.multiplayer.client/session-client-beans.xml"/>
+	<import resource="common-beans.xml"/>
+	
+	<!-- Singleton beans for client -->
+
+	<bean id="utils" class="com.ndg.utils.swing.NdgUIUtilsImpl" />
+	
+	<bean id="client" class="com.ndg.multiplayer.demo.client.DemoSessionClient" init-method="start">
+		<property name="clientToServerContext" ref="clientToServerJaxbContext" />
+		<property name="serverToClientContext" ref="serverToClientJaxbContext" />
+		<property name="serverToClientContextFactoryArray">
+			<array>
+				<ref bean="multiplayerSessionClientServerToClientObjectFactory" />
+				<ref bean="multiplayerSessionDemoServerToClientObjectFactory" />
+			</array>
+		</property>
+		<property name="processMessagesOnSwingEventDispatcherThread" value="true" />
+		<property name="utils" ref="utils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="conversationTag" value="MultiplayerSessionDemo" />
+		<property name="compress" value="true" />
+		<property name="decompress" value="true" />
+	</bean>
+	
+	<!-- Message prototypes -->
+	
+	<bean id="stocChatMessage" class="com.ndg.multiplayer.demo.client.StocChatEx" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+
+	<bean id="multiplayerSessionDemoServerToClientMessageFactory" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="com.ndg.multiplayer.demo.client.MultiplayerSessionDemoServerToClientMessageFactory" />
+	</bean>
+
+	<bean id="multiplayerSessionDemoServerToClientObjectFactory" class="com.ndg.multiplayer.demo.client.MultiplayerSessionDemoServerToClientObjectFactory">
+		<property name="messageFactory" ref="multiplayerSessionDemoServerToClientMessageFactory" />
+	</bean>
+	
+</beans>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd" >
+	
+	<import resource="../com.ndg.multiplayer.sessionbase/session-common-beans.xml"/>
+	
+	<!-- Singleton beans for server -->
+	
+	<bean id="multiplayerSessionServerUtils" class="com.ndg.multiplayer.server.session.MultiplayerSessionServerUtilsImpl">
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+	
+	<bean id="defaultUserRegistryObjectFactory" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="com.ndg.multiplayer.server.users.UserRegistryObjectFactory" />
+	</bean>
+	
+	<!-- Server message prototypes -->
+	
+	<bean id="loginMessage" class="com.ndg.multiplayer.server.messages.process.LoginImpl" scope="prototype">
+		<property name="multiplayerSessionServerUtils" ref="multiplayerSessionServerUtils" />
+	</bean>
+
+	<bean id="requestSessionListMessage" class="com.ndg.multiplayer.server.messages.process.RequestSessionListImpl" scope="prototype">
+		<property name="multiplayerSessionServerUtils" ref="multiplayerSessionServerUtils" />
+	</bean>
+
+	<bean id="joinSessionMessage" class="com.ndg.multiplayer.server.messages.process.JoinSessionImpl" scope="prototype">
+		<property name="multiplayerSessionServerUtils" ref="multiplayerSessionServerUtils" />
+	</bean>
+
+	<bean id="multiplayerSessionServerClientToServerMessageFactory" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="com.ndg.multiplayer.server.messages.process.MultiplayerSessionServerClientToServerMessageFactory" />
+	</bean>	
+
+	<bean id="multiplayerSessionServerClientToServerObjectFactory" class="com.ndg.multiplayer.server.messages.process.MultiplayerSessionServerClientToServerObjectFactory">
+		<property name="messageFactory" ref="multiplayerSessionServerClientToServerMessageFactory" />
+	</bean>
+
+</beans>

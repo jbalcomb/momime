@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd" >
+	
+	<import resource="../com.ndg.multiplayer.sessionbase/session-common-beans.xml"/>
+	
+	<!-- Client message prototypes -->
+	
+	<bean id="additionalPlayerJoinedMessage" class="com.ndg.multiplayer.client.messages.process.AdditionalPlayerJoinedImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="createAccountFailedMessage" class="com.ndg.multiplayer.client.messages.process.CreateAccountFailedImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="createAccountSuccessfulMessage" class="com.ndg.multiplayer.client.messages.process.CreateAccountSuccessfulImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="joinFailedMessage" class="com.ndg.multiplayer.client.messages.process.JoinFailedImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="joinSuccessfulMessage" class="com.ndg.multiplayer.client.messages.process.JoinSuccessfulImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="kickedByAnotherLoginMessage" class="com.ndg.multiplayer.client.messages.process.KickedByAnotherLoginImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="leaveSessionFailedMessage" class="com.ndg.multiplayer.client.messages.process.LeaveSessionFailedImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="loginFailedMessage" class="com.ndg.multiplayer.client.messages.process.LoginFailedImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="loginSuccessfulMessage" class="com.ndg.multiplayer.client.messages.process.LoginSuccessfulImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+
+	<bean id="logoutFailedMessage" class="com.ndg.multiplayer.client.messages.process.LogoutFailedImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="logoutSuccessfulMessage" class="com.ndg.multiplayer.client.messages.process.LogoutSuccessfulImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="playerLeftMessage" class="com.ndg.multiplayer.client.messages.process.PlayerLeftImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="requestSessionListFailedMessage" class="com.ndg.multiplayer.client.messages.process.RequestSessionListFailedImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="requestSessionListSuccessfulMessage" class="com.ndg.multiplayer.client.messages.process.RequestSessionListSuccessfulImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="sessionEndingMessage" class="com.ndg.multiplayer.client.messages.process.SessionEndingImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="browseSavedGamesFailedMessage" class="com.ndg.multiplayer.client.messages.process.BrowseSavedGamesFailedImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="browseSavePointsFailedMessage" class="com.ndg.multiplayer.client.messages.process.BrowseSavePointsFailedImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="loadGameFailedMessage" class="com.ndg.multiplayer.client.messages.process.LoadGameFailedImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+
+	<bean id="browseSavedGamesSuccessfulMessage" class="com.ndg.multiplayer.client.messages.process.BrowseSavedGamesSuccessfulImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="browseSavePointsSuccessfulMessage" class="com.ndg.multiplayer.client.messages.process.BrowseSavePointsSuccessfulImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+
+	<bean id="deleteSavedGameSuccessfulMessage" class="com.ndg.multiplayer.client.messages.process.DeleteSavedGameSuccessfulImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+
+	<bean id="deleteSavedGameFailedMessage" class="com.ndg.multiplayer.client.messages.process.DeleteSavedGameFailedImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="updateHumanPlayerToAiMessage" class="com.ndg.multiplayer.client.messages.process.UpdateHumanPlayerToAiImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+	
+	<bean id="multiplayerSessionClientServerToClientMessageFactory" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="com.ndg.multiplayer.client.messages.process.MultiplayerSessionClientServerToClientMessageFactory" />
+	</bean>
+	
+	<bean id="multiplayerSessionClientServerToClientObjectFactory" class="com.ndg.multiplayer.client.messages.process.MultiplayerSessionClientServerToClientObjectFactory">
+		<property name="messageFactory" ref="multiplayerSessionClientServerToClientMessageFactory" />
+	</bean>
+	
+</beans>

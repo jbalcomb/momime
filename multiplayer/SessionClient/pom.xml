@@ -1,0 +1,33 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>ndgmultiplayer-sessionclient</artifactId>
+	<name>ndgMultiplayerSessionClient</name>
+	<description>Multiplayer engine - session client (maintainin session and client information and state)</description>
+
+	<parent>
+		<groupId>com.ndg.multiplayer</groupId>
+		<artifactId>ndgmultiplayer-parent</artifactId>
+		<version>0.8.0</version>
+	</parent>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.ndg.multiplayer</groupId>
+			<artifactId>ndgmultiplayer-sessionbase</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+		</dependency>
+	</dependencies>
+
+</project>

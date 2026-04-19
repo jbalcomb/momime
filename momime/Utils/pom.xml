@@ -1,0 +1,37 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>momime-utils</artifactId>
+	<name>momimeUtils</name>
+	<description>Helper classes for dealing with original MoM and MoM IME file formats like .lbx and .ndgarc</description>
+
+	<parent>
+		<groupId>com.ndg.momime</groupId>
+		<artifactId>momime-parent</artifactId>
+		<version>1.7.0</version>
+	</parent>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.ndg.common</groupId>
+			<artifactId>ndgutils</artifactId>
+			<version>${mom.ndgutils.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+		</dependency>
+	</dependencies>
+
+</project>

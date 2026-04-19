@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd" >
+
+	<!-- This contains beans commonly used by all implementations of the XML editor - so their Spring files will include this one -->
+
+	<bean id="utils" class="com.ndg.utils.swing.NdgUIUtilsImpl" />
+
+	<!-- XML (domImplementationRegistry is only necessary if a resourceResolver is necessary, i.e. there are multiple XSDs invovled) -->
+
+	<bean id="domImplementationRegistry" class="org.w3c.dom.bootstrap.DOMImplementationRegistry" factory-method="newInstance" />
+
+	<!-- Schema that models the structure of XSD files themselves -->
+	
+	<bean id="xsdSchema" class="javax.xml.validation.Schema" factory-bean="schemaFactory" factory-method="newSchema">
+		<constructor-arg type="java.net.URL" value="/com.ndg.xmleditor.schema/XMLSchema.xsd"/>
+	</bean>
+
+	<bean id="xsdJaxbContext" class="jakarta.xml.bind.JAXBContext" factory-method="newInstance">
+		<constructor-arg>
+    		<list>
+    			<value>org.w3._2001.xmlschema.Schema</value>
+    		</list>
+   		</constructor-arg>
+	</bean>
+
+	<bean id="xsdUnmarshaller" class="jakarta.xml.bind.Unmarshaller" factory-bean="xsdJaxbContext" factory-method="createUnmarshaller">
+		<property name="schema" ref="xsdSchema" />
+	</bean>
+
+	<bean id="xsdObjectFactory" class="com.ndg.xmleditor.schema.ObjectFactoryEx" />
+
+	<bean id="configureXsdUnmarshaller" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetObject" ref="xsdUnmarshaller" />
+		<property name="targetMethod" value="setProperty" />
+		<property name="arguments">
+			<list>
+				<value>org.glassfish.jaxb.core.ObjectFactory</value>
+				<array>
+					<ref bean="xsdObjectFactory" />
+				</array>
+			</list>
+		</property>
+	</bean>	
+
+	<!-- JDOM -->
+
+	<bean id="parser" class="org.jdom2.input.SAXBuilder" />
+
+	<!-- General editor -->
+	
+	<bean id="grid" class="com.ndg.xmleditor.grid.XmlEditorGrid" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+	</bean>
+
+	<bean id="panel" class="com.ndg.xmleditor.single.XmlRecordPanel" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+	</bean>
+
+	<bean id="edit" class="com.ndg.xmleditor.single.EditXmlRecord" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+	</bean>
+
+	<bean id="textField" class="com.ndg.xmleditor.single.field.XmlRecordTextField" scope="prototype" />
+
+	<bean id="textArea" class="com.ndg.xmleditor.single.field.XmlRecordTextArea" scope="prototype" />
+
+	<bean id="booleanField" class="com.ndg.xmleditor.single.field.XmlRecordBoolean" scope="prototype" />
+
+	<bean id="dateField" class="com.ndg.xmleditor.single.field.XmlRecordDateField" scope="prototype">
+		<property name="editable" value="true" />		<!-- Allow typing a date as well as using the calendar control -->
+	</bean>
+
+	<bean id="creator" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="com.ndg.xmleditor.editor.XmlEditorPrototypeFrameCreator" />
+	</bean>			
+
+</beans>

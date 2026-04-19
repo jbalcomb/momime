@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd" >
+
+	<import resource="../com.ndg.xmleditor.spring/common-editor-beans.xml"/>
+
+	<!-- XML -->
+
+	<bean id="momResourceResolver" class="momime.common.database.CommonXsdResourceResolver">
+		<constructor-arg ref="domImplementationRegistry" />
+	</bean>
+
+	<bean id="resourceResolver" class="com.ndg.xmleditor.XmlResourceResolver">
+		<property name="domImplementationRegistry" ref="domImplementationRegistry" />
+		<property name="secondaryResourceResolver" ref="momResourceResolver" />
+	</bean>
+
+	<bean id="schemaFactoryFactory" class="com.ndg.utils.SchemaFactoryFactory" />
+	
+	<bean id="schemaFactory" class="javax.xml.validation.SchemaFactory" factory-bean="schemaFactoryFactory" factory-method="createSchemaFactory">
+		<constructor-arg ref="resourceResolver" />
+	</bean>
+
+	<!-- MoM IME Language specific -->
+
+	<bean id="diplomacyScreenGrid" class="momime.editors.client.language.diplomacyScreen.DiplomacyScreenGrid" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+	</bean>
+
+	<bean id="dispatcher" class="com.ndg.xmleditor.editor.XmlEditorDispatcher">
+		<property name="creator" ref="creator" />
+		<property name="gridBeansMap">
+			<map>
+				<entry key="diplomacyScreen" value="diplomacyScreenGrid" />
+				<entry key="default" value="grid" />
+			</map>
+		</property>
+		<property name="recordPanelBeansMap">
+			<map>
+				<entry key="default" value="panel" />
+			</map>
+		</property>
+		<property name="editRecordBeansMap">
+			<map>
+				<entry key="default" value="edit" />
+			</map>
+		</property>
+		<property name="dataTypesMap">
+			<map>
+				<entry key="boolean" value="booleanField" />
+				<entry key="string" value="textArea" />		<!-- xsd:string assumed to be multi-line; xsd:normalizedString assumed to be single-line -->
+				<entry key="default" value="textField" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="mdiEditor" class="com.ndg.xmleditor.editor.XmlEditorMain">
+		<property name="dispatcher" ref="dispatcher" />
+	</bean>
+
+	<!-- General editor -->
+	
+	<bean id="ask" class="com.ndg.xmleditor.editor.AskForXsdAndXmlFileLocations" init-method="init">
+		<property name="utils" ref="utils" />
+		<property name="dispatcher" ref="dispatcher" />
+		<property name="parser" ref="parser" />
+		<property name="schemaFactory" ref="schemaFactory" />
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="xsdUnmarshaller" ref="xsdUnmarshaller" />
+		
+		<property name="resourceResolver" ref="resourceResolver" />
+		<property name="loadXsdFromClasspath" value="true" />
+		<property name="xsdFilename" value="/momime.client.language/MoMIMELanguagesDatabase.xsd" />
+	</bean>
+
+</beans>

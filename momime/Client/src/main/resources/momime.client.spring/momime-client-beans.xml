@@ -1,0 +1,2531 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+	
+	<import resource="../com.ndg.multiplayer.client/session-client-beans.xml" />
+	<import resource="../momime.common.spring/momime-common-beans.xml" />
+	
+	<!-- Version of the client -->
+	
+	<context:property-placeholder location="classpath:MoMIMEClientVersion.properties" />
+	
+	<!-- JMX -->
+	
+	<bean id="exporter" class="org.springframework.jmx.export.MBeanExporter">
+        <property name="assembler" ref="assembler"/>
+        <property name="namingStrategy" ref="namingStrategy"/>
+        <property name="autodetect" value="true"/>
+    </bean>
+
+    <bean id="jmxAttributeSource" class="org.springframework.jmx.export.annotation.AnnotationJmxAttributeSource"/>
+
+    <bean id="assembler" class="org.springframework.jmx.export.assembler.MetadataMBeanInfoAssembler">
+        <property name="attributeSource" ref="jmxAttributeSource"/>
+    </bean>
+
+    <bean id="namingStrategy" class="org.springframework.jmx.export.naming.MetadataNamingStrategy">
+        <property name="attributeSource" ref="jmxAttributeSource"/>
+    </bean>	
+	
+	<!-- Client config XML -->
+	
+	<bean id="clientConfigSchema" class="javax.xml.validation.Schema" factory-bean="schemaFactory" factory-method="newSchema">
+		<constructor-arg type="java.net.URL" value="/momime.client.config/MoMIMEClientConfig.xsd" />
+	</bean>
+	
+	<bean id="clientConfigJaxbContext" class="jakarta.xml.bind.JAXBContext" factory-method="newInstance">
+		<constructor-arg>
+    		<list>
+    			<value>momime.client.config.MomImeClientConfig</value>
+    		</list>
+   		</constructor-arg>
+	</bean>
+	
+	<bean id="clientConfigUnmarshaller" class="jakarta.xml.bind.Unmarshaller" factory-bean="clientConfigJaxbContext" factory-method="createUnmarshaller">
+		<property name="schema" ref="clientConfigSchema" />
+	</bean>
+
+	<bean id="clientConfig" class="momime.client.config.MomImeClientConfig" factory-bean="clientConfigUnmarshaller" factory-method="unmarshal">
+		<constructor-arg value="${configDir}MoMIMEClientConfig.xml" />
+	</bean>
+
+	<bean id="clientConfigMarshaller" class="jakarta.xml.bind.Marshaller" factory-bean="clientConfigJaxbContext" factory-method="createMarshaller">
+		<property name="schema" ref="clientConfigSchema" />
+	</bean>
+
+	<bean id="configureClientConfigMarshaller" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetObject" ref="clientConfigMarshaller" />
+		<property name="targetMethod" value="setProperty" />
+		<property name="arguments">
+			<list>
+				<value>jaxb.formatted.output</value>
+				<value type="java.lang.Boolean">true</value>
+			</list>
+		</property>
+	</bean>
+	
+	<!-- Graphics XML -->
+	
+	<bean id="graphicsDatabaseSchema" class="javax.xml.validation.Schema" factory-bean="schemaFactory" factory-method="newSchema">
+		<constructor-arg type="java.net.URL" value="/momime.client.graphics/MoMIMEGraphicsDatabase.xsd" />		<!-- Otherwise XSD validation expects to find serverDatabase element in graphics XML -->
+	</bean>
+	
+	<bean id="graphicsDatabaseJaxbContext" class="jakarta.xml.bind.JAXBContext" factory-method="newInstance">
+		<constructor-arg>
+    		<list>
+    			<value>momime.client.graphics.database.GraphicsDatabase</value>
+    		</list>
+   		</constructor-arg>
+	</bean>
+	
+	<bean id="graphicsDatabaseObjectFactory" class="momime.client.graphics.database.GraphicsDatabaseObjectFactory" />		<!-- Creates GraphicsDatabaseExImpl instead of GraphicsDatabase -->
+		
+	<bean id="graphicsDatabaseUnmarshaller" class="jakarta.xml.bind.Unmarshaller" factory-bean="graphicsDatabaseJaxbContext" factory-method="createUnmarshaller">
+		<property name="schema" ref="graphicsDatabaseSchema" />
+	</bean>
+
+	<bean id="configureGraphicsDatabaseUnmarshaller" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetObject" ref="graphicsDatabaseUnmarshaller" />
+		<property name="targetMethod" value="setProperty" />
+		<property name="arguments">
+			<list>
+				 <value>org.glassfish.jaxb.core.ObjectFactory</value>
+				<array>
+					<ref bean="commonDatabaseObjectFactory" />
+					<ref bean="graphicsDatabaseObjectFactory" />
+				</array>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="graphicsDatabase" class="momime.client.graphics.database.GraphicsDatabaseExImpl" factory-bean="graphicsDatabaseUnmarshaller" factory-method="unmarshal" init-method="buildMapsAndRunConsistencyChecks">
+		<constructor-arg value="#{clientConfig.graphicsXmlFilename}" />
+		<property name="consistencyCheckLevel" value="#{clientConfig.consistencyCheckLevel}" />
+	</bean>
+	
+	<!-- Single languages XML -->
+	
+	<bean id="languagesDatabaseSchema" class="javax.xml.validation.Schema" factory-bean="schemaFactory" factory-method="newSchema">
+		<constructor-arg type="java.net.URL" value="/momime.client.language/MoMIMELanguagesDatabase.xsd" />
+	</bean>
+	
+	<bean id="languagesDatabaseJaxbContext" class="jakarta.xml.bind.JAXBContext" factory-method="newInstance">
+		<constructor-arg>
+    		<list>
+    			<value>momime.client.languages.database.MomLanguages</value>
+    		</list>
+   		</constructor-arg>
+	</bean>
+
+	<bean id="momLanguagesFactory" class="momime.client.language.database.MomLanguagesFactory" />		<!-- Creates MomLanguagesExImpl instead of MomLanguages -->
+
+	<bean id="languagesDatabaseUnmarshaller" class="jakarta.xml.bind.Unmarshaller" factory-bean="languagesDatabaseJaxbContext" factory-method="createUnmarshaller">
+		<property name="schema" ref="languagesDatabaseSchema" />
+	</bean>
+
+	<bean id="configureLanguagesDatabaseUnmarshaller" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetObject" ref="languagesDatabaseUnmarshaller" />
+		<property name="targetMethod" value="setProperty" />
+		<property name="arguments">
+			<list>
+				 <value>org.glassfish.jaxb.core.ObjectFactory</value>
+				<array>
+					<ref bean="momLanguagesFactory" />
+				</array>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="momLanguages" class="momime.client.language.database.MomLanguagesExImpl" factory-bean="languagesDatabaseUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg value="#{clientConfig.languagesXmlFilename}" />
+	</bean>
+	
+	<bean id="languageHolder" class ="momime.client.language.database.LanguageDatabaseHolder">
+		<property name="language" value="#{clientConfig.chosenLanguage}" />
+		<property name="languages" ref="momLanguages" />
+	</bean>
+
+	<!-- XML layouts -->
+
+	<bean id="xmlLayoutSchema" class="javax.xml.validation.Schema" factory-bean="schemaFactory" factory-method="newSchema">
+		<constructor-arg type="java.net.URL" value="/com.ndg.utils.swing.layoutmanagers/XmlLayout.xsd" />
+	</bean>
+	
+	<bean id="xmlLayoutJaxbContext" class="jakarta.xml.bind.JAXBContext" factory-method="newInstance">
+		<constructor-arg>
+    		<list>
+    			<value>com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainer</value>
+    		</list>
+   		</constructor-arg>
+	</bean>
+	
+	<bean id="xmlLayoutObjectFactory" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutObjectFactory" />
+	
+	<bean id="xmlLayoutUnmarshaller" class="jakarta.xml.bind.Unmarshaller" factory-bean="xmlLayoutJaxbContext" factory-method="createUnmarshaller">
+		<property name="schema" ref="xmlLayoutSchema" />
+	</bean>
+
+	<bean id="configureXmlLayoutUnmarshaller" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetObject" ref="xmlLayoutUnmarshaller" />
+		<property name="targetMethod" value="setProperty" />
+		<property name="arguments">
+			<list>
+				 <value>org.glassfish.jaxb.core.ObjectFactory</value>
+				<array>
+					<ref bean="xmlLayoutObjectFactory" />
+				</array>
+			</list>
+		</property>
+	</bean>
+
+	<!-- Create extended versions of server to clientmessages which include message implementations -->
+
+	<bean id="momClientServerToClientServerFactory" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="momime.client.messages.process.ServerToClientMessagesFactory" />
+	</bean>			
+
+	<bean id="momClientServerToClientObjectFactory" class="momime.client.messages.process.ServerToClientMessagesObjectFactory">
+		<property name="factory" ref="momClientServerToClientServerFactory" />
+	</bean>
+
+	<bean id="newGameDatabaseMessage" class="momime.client.messages.process.NewGameDatabaseMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="connectToServerUI" ref="connectToServerUI" />
+	</bean>
+
+	<bean id="meetWizardMessage" class="momime.client.messages.process.MeetWizardMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="newGameUI" ref="newGameUI" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="wizardsUI" ref="wizardsUI" />
+		<property name="historyUI" ref="historyUI" />
+		<property name="diplomacyUI" ref="diplomacyUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+	</bean>
+
+	<bean id="yourPhotoIsOkMessage" class="momime.client.messages.process.YourPhotoIsOkMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="newGameUI" ref="newGameUI" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+
+	<bean id="yourFlagColourIsOkMessage" class="momime.client.messages.process.YourFlagColourIsOkMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="newGameUI" ref="newGameUI" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+
+	<bean id="replacePicksMessage" class="momime.client.messages.process.ReplacePicksMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="wizardsUI" ref="wizardsUI" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+	
+	<bean id="chooseInitialSpellsNowMessage" class="momime.client.messages.process.ChooseInitialSpellsNowMessageImpl" scope="prototype">
+		<property name="newGameUI" ref="newGameUI" />
+	</bean>
+	
+	<bean id="chooseYourRaceNowMessage" class="momime.client.messages.process.ChooseYourRaceNowMessageImpl" scope="prototype">
+		<property name="newGameUI" ref="newGameUI" />
+	</bean>
+
+	<bean id="yourRaceIsOkMessage" class="momime.client.messages.process.YourRaceIsOkMessageImpl" scope="prototype" >
+		<property name="newGameUI" ref="newGameUI" />
+	</bean>
+	
+	<bean id="fullSpellListMessage" class="momime.client.messages.process.FullSpellListMessageImpl" scope="prototype" >
+		<property name="client" ref="client" />
+		<property name="spellUtils" ref="spellUtils" />
+		<property name="spellBookUI" ref="spellBookUI" />
+	</bean>
+
+	<bean id="startGameMessage" class="momime.client.messages.process.StartGameMessageImpl" scope="prototype">
+		<property name="newGameUI" ref="newGameUI" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="taxRateUI" ref="taxRateUI" />
+		<property name="magicSlidersUI" ref="magicSlidersUI" />
+		<property name="alchemyUI" ref="alchemyUI" />
+		<property name="spellBookUI" ref="spellBookUI" />
+		<property name="queuedSpellsUI" ref="queuedSpellsUI" />
+		<property name="citiesListUI" ref="citiesListUI" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="selectAdvisorUI" ref="selectAdvisorUI" />
+		<property name="damageCalculationsUI" ref="damageCalculationsUI" />
+		<property name="wizardsUI" ref="wizardsUI" />
+		<property name="heroItemsUI" ref="heroItemsUI" />
+		<property name="historyUI" ref="historyUI" />
+		<property name="mainMenuUI" ref="mainMenuUI" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>
+
+	<bean id="updateGlobalEconomyMessage" class="momime.client.messages.process.UpdateGlobalEconomyMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="magicSlidersUI" ref="magicSlidersUI" />
+		<property name="alchemyUI" ref="alchemyUI" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="heroItemsUI" ref="heroItemsUI" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="wizardsUI" ref="wizardsUI" />
+		<property name="citiesListUI" ref="citiesListUI" />
+	</bean>
+
+	<bean id="erasePendingMovementsMessage" class="momime.client.messages.process.ErasePendingMovementsMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+	</bean>
+
+	<bean id="pendingMovementMessage" class="momime.client.messages.process.PendingMovementMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+	</bean>
+
+	<bean id="setCurrentPlayerMessage" class="momime.client.messages.process.SetCurrentPlayerMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="cityCalculations" ref="cityCalculations" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+		<property name="newTurnMessageProcessing" ref="newTurnMessageProcessing" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="historyUI" ref="historyUI" />
+	</bean>
+
+	<bean id="startSimultaneousTurnMessage" class="momime.client.messages.process.StartSimultaneousTurnMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="cityCalculations" ref="cityCalculations" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+		<property name="newTurnMessageProcessing" ref="newTurnMessageProcessing" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="historyUI" ref="historyUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+	</bean>
+
+	<bean id="onePlayerSimultaneousTurnDoneMessage" class="momime.client.messages.process.OnePlayerSimultaneousTurnDoneMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+	</bean>
+
+	<bean id="updateTurnPhaseMessage" class="momime.client.messages.process.UpdateTurnPhaseMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+	</bean>
+
+	<bean id="addNewTurnMessagesMessage" class="momime.client.messages.process.AddNewTurnMessagesMessageImpl" scope="prototype">
+		<property name="newTurnMessageProcessing" ref="newTurnMessageProcessing" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+	</bean>
+
+	<bean id="endOfContinuedMovementMessage" class="momime.client.messages.process.EndOfContinuedMovementMessageImpl" scope="prototype">
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+	</bean>
+
+	<bean id="textPopupMessage" class="momime.client.messages.process.TextPopupMessageImpl" scope="prototype">
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="languageHolder" ref="languageHolder" />
+	</bean>
+
+	<bean id="planeShiftUnitStackMessage" class="momime.client.messages.process.PlaneShiftUnitStackMessageImpl" scope="prototype">
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+	</bean>
+
+	<bean id="selectNextUnitToMoveOverlandMessage" class="momime.client.messages.process.SelectNextUnitToMoveOverlandMessageImpl" scope="prototype">
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+	</bean>
+
+	<bean id="moveUnitStackOverlandMessage" class="momime.client.messages.process.MoveUnitStackOverlandMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="citiesListUI" ref="citiesListUI" />
+		<property name="unitVisibilityUtils" ref="unitVisibilityUtils" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+	</bean>
+
+	<bean id="spellResearchChangedMessage" class="momime.client.messages.process.SpellResearchChangedMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="spellBookUI" ref="spellBookUI" />
+		<property name="magicSlidersUI" ref="magicSlidersUI" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+	</bean>
+	
+	<bean id="updateRemainingResearchCostMessage" class="momime.client.messages.process.UpdateRemainingResearchCostMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="spellBookUI" ref="spellBookUI" />
+		<property name="magicSlidersUI" ref="magicSlidersUI" />
+		<property name="spellUtils" ref="spellUtils" />
+	</bean>
+
+	<bean id="overlandCastQueuedMessage" class="momime.client.messages.process.OverlandCastQueuedMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="queuedSpellsUI" ref="queuedSpellsUI" />
+		<property name="magicSlidersUI" ref="magicSlidersUI" />
+	</bean>
+
+	<bean id="updateManaSpentOnCastingCurrentSpellMessage" class="momime.client.messages.process.UpdateManaSpentOnCastingCurrentSpellMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="queuedSpellsUI" ref="queuedSpellsUI" />
+	</bean>
+
+	<bean id="removeQueuedSpellMessage" class="momime.client.messages.process.RemoveQueuedSpellMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="queuedSpellsUI" ref="queuedSpellsUI" />
+	</bean>
+	
+	<bean id="startCombatMessage" class="momime.client.messages.process.StartCombatMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="spellBookUI" ref="spellBookUI" />
+		<property name="createArtifactUI" ref="createArtifactUI" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+	</bean>
+
+	<bean id="updateCombatMapMessage" class="momime.client.messages.process.UpdateCombatMapMessageImpl" scope="prototype">
+		<property name="combatUI" ref="combatUI" />
+	</bean>
+
+	<bean id="setCombatPlayerMessage" class="momime.client.messages.process.SetCombatPlayerMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="combatMapProcessing" ref="combatMapProcessing" />
+	</bean>
+	
+	<bean id="moveUnitInCombatMessage" class="momime.client.messages.process.MoveUnitInCombatMessageImpl" scope="prototype">
+		<property name="utils" ref="uiUtils" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="client" ref="client" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="combatMapProcessing" ref="combatMapProcessing" />
+		<property name="combatMapBitmapGenerator" ref="combatMapBitmapGenerator" />
+		<property name="soundPlayer" ref="soundPlayer" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="unitVisibilityUtils" ref="unitVisibilityUtils" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>	
+
+	<bean id="applyDamageMessage" class="momime.client.messages.process.ApplyDamageMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="combatMapProcessing" ref="combatMapProcessing" />
+		<property name="combatMapBitmapGenerator" ref="combatMapBitmapGenerator" />
+		<property name="soundPlayer" ref="soundPlayer" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="anim" ref="anim" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+	</bean>
+
+	<bean id="combatEndedMessage" class="momime.client.messages.process.CombatEndedMessageImpl" scope="prototype">
+		<property name="combatUI" ref="combatUI" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="anim" ref="anim" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+		<property name="spellBookUI" ref="spellBookUI" />
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="setUnitIntoOrTakeUnitOutOfCombatMessage" class="momime.client.messages.process.SetUnitIntoOrTakeUnitOutOfCombatMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="combatMapBitmapGenerator" ref="combatMapBitmapGenerator" />
+		<property name="combatMapProcessing" ref="combatMapProcessing" />
+		<property name="soundPlayer" ref="soundPlayer" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>
+	
+	<bean id="askForCaptureCityDecisionMessage" class="momime.client.messages.process.AskForCaptureCityDecisionMessageImpl" scope="prototype">
+		<property name="razeCityUI" ref="razeCityUI" />
+	</bean>
+
+	<bean id="taxRateChangedMessage" class="momime.client.messages.process.TaxRateChangedMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="taxRateUI" ref="taxRateUI" />
+	</bean>
+
+	<bean id="damageCalculationMessage" class="momime.client.messages.process.DamageCalculationMessageImpl" scope="prototype">
+		<property name="damageCalculationsUI" ref="damageCalculationsUI" />
+	</bean>
+	
+	<bean id="broadcastChatMessage" class="momime.client.messages.process.BroadcastChatMessageImpl" scope="prototype" />
+	
+	<bean id="updateTerrainMessage" class="momime.client.messages.process.UpdateTerrainMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="overlandMapBitmapGenerator" ref="overlandMapBitmapGenerator" />
+		<property name="booleanMapAreaOperations3D" ref="booleanMapAreaOperations3D" />
+	</bean>
+
+	<bean id="updateCityMessage" class="momime.client.messages.process.UpdateCityMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="citiesListUI" ref="citiesListUI" />
+	</bean>
+
+	<bean id="addBuildingMessage" class="momime.client.messages.process.AddBuildingMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="cityCalculations" ref="cityCalculations" />
+	</bean>
+
+	<bean id="destroyBuildingMessage" class="momime.client.messages.process.DestroyBuildingMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="cityCalculations" ref="cityCalculations" />
+	</bean>
+
+	<bean id="addOrUpdateUnitMessage" class="momime.client.messages.process.AddOrUpdateUnitMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="heroItemsUI" ref="heroItemsUI" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+		<property name="combatMapProcessing" ref="combatMapProcessing" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+	</bean>
+
+	<bean id="killUnitMessage" class="momime.client.messages.process.KillUnitMessageImpl" scope="prototype">
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="client" ref="client" />
+		<property name="unitUtils" ref="unitUtils" />
+	</bean>
+
+	<bean id="addOrUpdateMaintainedSpellMessage" class="momime.client.messages.process.AddOrUpdateMaintainedSpellMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="combatMapBitmapGenerator" ref="combatMapBitmapGenerator" />
+		<property name="soundPlayer" ref="soundPlayer" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="cityCalculations" ref="cityCalculations" />
+		<property name="memoryGridCellUtils" ref="memoryGridCellUtils" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="wizardsUI" ref="wizardsUI" />
+		<property name="kindOfSpellUtils" ref="kindOfSpellUtils" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>
+
+	<bean id="switchOffMaintainedSpellMessage" class="momime.client.messages.process.SwitchOffMaintainedSpellMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="magicSlidersUI" ref="magicSlidersUI" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="wizardsUI" ref="wizardsUI" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+	</bean>
+
+	<bean id="addOrUpdateCombatAreaEffectMessage" class="momime.client.messages.process.AddOrUpdateCombatAreaEffectMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="memoryCombatAreaEffectUtils" ref="memoryCombatAreaEffectUtils" />
+	</bean>
+
+	<bean id="cancelCombatAreaEffectMessage" class="momime.client.messages.process.CancelCombatAreaEffectMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="memoryCombatAreaEffectUtils" ref="memoryCombatAreaEffectUtils" />
+		<property name="unitUtils" ref="unitUtils" />
+	</bean>
+
+	<bean id="fogOfWarVisibleAreaChangedMessage" class="momime.client.messages.process.FogOfWarVisibleAreaChangedMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="factory" ref="momClientServerToClientServerFactory" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="citiesListUI" ref="citiesListUI" />
+	</bean>
+
+	<bean id="pendingSaleMessage" class="momime.client.messages.process.PendingSaleMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="citiesListUI" ref="citiesListUI" />
+	</bean>
+
+	<bean id="addUnassignedHeroItemMessage" class="momime.client.messages.process.AddUnassignedHeroItemMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="heroItemsUI" ref="heroItemsUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+	</bean>
+
+	<bean id="removeUnassignedHeroItemMessage" class="momime.client.messages.process.RemoveUnassignedHeroItemMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="heroItemsUI" ref="heroItemsUI" />
+		<property name="heroItemUtils" ref="heroItemUtils" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+	</bean>
+
+	<bean id="treasureRewardMessage" class="momime.client.messages.process.TreasureRewardMessageImpl" scope="prototype">
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+	</bean>
+
+	<bean id="dispelMagicResultsMessage" class="momime.client.messages.process.DispelMagicResultsMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+	</bean>
+
+	<bean id="counterMagicResultsMessage" class="momime.client.messages.process.CounterMagicResultsMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+	</bean>
+
+	<bean id="showSpellAnimationMessage" class="momime.client.messages.process.ShowSpellAnimationMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="soundPlayer" ref="soundPlayer" />
+		<property name="combatMapBitmapGenerator" ref="combatMapBitmapGenerator" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>
+
+	<bean id="updateWizardStateMessage" class="momime.client.messages.process.UpdateWizardStateMessageImpl" scope="prototype">
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="client" ref="client" />
+		<property name="wizardsUI" ref="wizardsUI" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+
+	<bean id="addPowerBaseHistoryMessage" class="momime.client.messages.process.AddPowerBaseHistoryMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="historyUI" ref="historyUI" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+
+	<bean id="playAnimationMessage" class="momime.client.messages.process.PlayAnimationMessageImpl" scope="prototype">
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="client" ref="client" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+
+	<bean id="offerAcceptedMessage" class="momime.client.messages.process.OfferAcceptedMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+	</bean>
+
+	<bean id="overlandCastingInfoMessage" class="momime.client.messages.process.OverlandCastingInfoMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="wizardsUI" ref="wizardsUI" />
+	</bean>
+
+	<bean id="randomEventMessage" class="momime.client.messages.process.RandomEventMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+	</bean>
+
+	<bean id="diplomacyMessage" class="momime.client.messages.process.DiplomacyMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="diplomacyUI" ref="diplomacyUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+
+	<bean id="pactMessage" class="momime.client.messages.process.PactMessageImpl" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="wizardsUI" ref="wizardsUI" />
+	</bean>
+
+	<bean id="tradeableSpellsMessage" class="momime.client.messages.process.TradeableSpellsMessageImpl" scope="prototype">
+		<property name="diplomacyUI" ref="diplomacyUI" />
+	</bean>
+
+	<!-- Create extended versions of NTMs which include drawing implementations -->
+
+	<bean id="newTurnMessageCategory" class="momime.client.newturnmessages.NewTurnMessageCategory" scope="prototype">
+		<property name="largeFont" ref="largeFont" />
+		<property name="languageHolder" ref="languageHolder" />
+	</bean>
+	
+	<bean id="newTurnMessagePopulationChange" class="momime.client.newturnmessages.NewTurnMessagePopulationChangeEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="client" ref="client" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+	</bean>
+
+	<bean id="newTurnMessageDestroyBuilding" class="momime.client.newturnmessages.NewTurnMessageDestroyBuildingEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="anim" ref="anim" />
+		<property name="client" ref="client" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="utils" ref="uiUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+
+	<bean id="newTurnMessageConstructBuilding" class="momime.client.newturnmessages.NewTurnMessageConstructBuildingEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="anim" ref="anim" />
+		<property name="client" ref="client" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="utils" ref="uiUtils" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>
+
+	<bean id="newTurnMessageConstructUnit" class="momime.client.newturnmessages.NewTurnMessageConstructUnitEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="anim" ref="anim" />
+		<property name="client" ref="client" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="utils" ref="uiUtils" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>
+
+	<bean id="newTurnMessageSpell" class="momime.client.newturnmessages.NewTurnMessageSpellEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="spellBookUI" ref="spellBookUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="magicSlidersUI" ref="magicSlidersUI" />
+		<property name="kindOfSpellUtils" ref="kindOfSpellUtils" />
+		<property name="wizardsUI" ref="wizardsUI" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="spellTargetingUtils" ref="spellTargetingUtils" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+
+	<bean id="newTurnMessageSummonUnit" class="momime.client.newturnmessages.NewTurnMessageSummonUnitEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitStatsReplacer" ref="unitStatsReplacer" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+	</bean>
+
+	<bean id="newTurnMessageCreateArtifact" class="momime.client.newturnmessages.NewTurnMessageCreateArtifactEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+		<property name="heroItemsUI" ref="heroItemsUI" />
+	</bean>
+
+	<bean id="newTurnMessageSpellSwitchedOffFromLackOfProduction" class="momime.client.newturnmessages.NewTurnMessageSpellSwitchedOffFromLackOfProductionEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="newTurnMessageBuildingSoldFromLackOfProduction" class="momime.client.newturnmessages.NewTurnMessageBuildingSoldFromLackOfProductionEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="newTurnMessageUnitKilledFromLackOfProduction" class="momime.client.newturnmessages.NewTurnMessageUnitKilledFromLackOfProductionEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitStatsReplacer" ref="unitStatsReplacer" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+	</bean>
+	
+	<bean id="newTurnMessageNode" class="momime.client.newturnmessages.NewTurnMessageNodeEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+	</bean>
+
+	<bean id="newTurnMessageHeroGainedALevel" class="momime.client.newturnmessages.NewTurnMessageHeroGainedALevelEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitStatsReplacer" ref="unitStatsReplacer" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+	</bean>
+
+	<bean id="newTurnMessageOfferHero" class="momime.client.newturnmessages.NewTurnMessageOfferHeroEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="unitStatsReplacer" ref="unitStatsReplacer" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+	</bean>
+
+	<bean id="newTurnMessageOfferUnits" class="momime.client.newturnmessages.NewTurnMessageOfferUnitsEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitStatsReplacer" ref="unitStatsReplacer" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="sampleUnitUtils" ref="sampleUnitUtils" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>
+
+	<bean id="newTurnMessageOfferItem" class="momime.client.newturnmessages.NewTurnMessageOfferItemEx" scope="prototype">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+	</bean>
+
+	<bean id="newTurnMessageSpellBlast" class="momime.client.newturnmessages.NewTurnMessageSpellBlastEx" scope="prototype">
+		<property name="utils" ref="uiUtils" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="queuedSpellsUI" ref="queuedSpellsUI" />
+	</bean>
+
+	<!-- Create extended versions of damage calculations which include method to work out the text to display -->
+
+	<bean id="damageCalculationHeaderData" class="momime.client.calculations.damage.DamageCalculationHeaderDataEx" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+	
+	<bean id="damageCalculationAttackData" class="momime.client.calculations.damage.DamageCalculationAttackDataEx" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+	
+	<bean id="damageCalculationDefenceData" class="momime.client.calculations.damage.DamageCalculationDefenceDataEx" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="textUtils" ref="textUtils" />
+	</bean>
+	
+	<bean id="damageCalculationWallData" class="momime.client.calculations.damage.DamageCalculationWallDataEx" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+	</bean>
+	
+	<bean id="damageCalculationConfusionData" class="momime.client.calculations.damage.DamageCalculationConfusionDataEx" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+	
+	<!-- Singleton beans for client -->
+	
+	<bean id="newTurnMessagesFactory" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="momime.client.newturnmessages.NewTurnMessagesFactory" />
+	</bean>
+	
+	<bean id="newTurnMessagesObjectFactory" class="momime.client.newturnmessages.NewTurnMessagesObjectFactory">
+		<property name="newTurnMessagesFactory" ref="newTurnMessagesFactory" />
+	</bean>
+	
+	<bean id="client" class="momime.client.MomClientImpl" init-method="start">
+		<property name="processMessagesOnSwingEventDispatcherThread" value="true" />
+		<property name="clientToServerContext" ref="clientToServerJaxbContext" />
+		<property name="serverToClientContext" ref="serverToClientJaxbContext" />
+		<property name="serverToClientContextFactoryArray">
+			<array>
+				<ref bean="multiplayerSessionClientServerToClientObjectFactory" />
+				<ref bean="momClientServerToClientObjectFactory" />
+				<ref bean="commonDatabaseObjectFactory" />
+				<ref bean="newTurnMessagesObjectFactory" />
+				<ref bean="objectFactoryMap" />
+			</array>
+		</property>
+		<property name="conversationTag" value="#{'MoMIME-' + '${momime.client.version}'}" />
+		<property name="compress" value="#{clientConfig.compressDataSentToServer}" />
+		<property name="decompress" value="#{clientConfig.decompressDataReceivedFromServer}" />
+		<property name="mainMenuUI" ref="mainMenuUI" />
+		<property name="connectToServerUI" ref="connectToServerUI" />
+		<property name="newGameUI" ref="newGameUI" />
+		<property name="joinGameUI" ref="joinGameUI" />
+		<property name="loadGameUI" ref="loadGameUI" />
+		<property name="taxRateUI" ref="taxRateUI" />
+		<property name="magicSlidersUI" ref="magicSlidersUI" />
+		<property name="alchemyUI" ref="alchemyUI" />
+		<property name="spellBookUI" ref="spellBookUI" />
+		<property name="queuedSpellsUI" ref="queuedSpellsUI" />
+		<property name="citiesListUI" ref="citiesListUI" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="selectAdvisorUI" ref="selectAdvisorUI" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="castCombatSpellFromUI" ref="castCombatSpellFromUI" />
+		<property name="damageCalculationsUI" ref="damageCalculationsUI" />
+		<property name="variableManaUI" ref="variableManaUI" />	
+		<property name="razeCityUI" ref="razeCityUI" />
+		<property name="wizardsUI" ref="wizardsUI" />
+		<property name="createArtifactUI" ref="createArtifactUI" />
+		<property name="heroItemsUI" ref="heroItemsUI" />
+		<property name="historyUI" ref="historyUI" />
+		<property name="diplomacyUI" ref="diplomacyUI" />
+		<property name="overlandMapBitmapGenerator" ref="overlandMapBitmapGenerator" />
+		<property name="combatMapBitmapGenerator" ref="combatMapBitmapGenerator" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="utils" ref="uiUtils" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="consistencyCheckLevel" value="#{clientConfig.consistencyCheckLevel}" />
+	</bean>
+	
+	<bean id="advancedPlayerFactory" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="com.ndg.audio.AdvancedPlayerFactory" />
+	</bean>
+	
+	<bean id="advancedPlayer" class="com.ndg.audio.AdvancedPlayerImpl" scope="prototype" />
+	
+	<bean id="musicPlayer" class="momime.client.audio.MomAudioPlayerImpl">
+		<property name="client" ref="client" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="randomUtils" ref="randomUtils" />
+		<property name="advancedPlayerFactory" ref="advancedPlayerFactory" />
+		<property name="loop" value="true" />
+		<property name="shuffle" value="true" />
+		<property name="playerName" value="MusicPlayer" />
+	</bean>
+	
+	<bean id="soundPlayer" class="momime.client.audio.MomAudioPlayerImpl">
+		<property name="client" ref="client" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="randomUtils" ref="randomUtils" />
+		<property name="advancedPlayerFactory" ref="advancedPlayerFactory" />
+		<property name="loop" value="false" />
+		<property name="playerName" value="SoundPlayer" />
+	</bean>
+	
+	<bean id="anim" class="momime.client.utils.AnimationControllerImpl">
+		<property name="utils" ref="uiUtils" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="textUtils" class="momime.client.utils.TextUtilsImpl">
+		<property name="languageHolder" ref="languageHolder" />
+	</bean>
+
+	<bean id="unitClientUtils" class="momime.client.utils.UnitClientUtilsImpl">
+		<property name="client" ref="client" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="utils" ref="uiUtils" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="anim" ref="anim" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+		<property name="combatMapProcessing" ref="combatMapProcessing" />
+		<property name="pendingMovementUtils" ref="pendingMovementUtils" />
+		<property name="soundPlayer" ref="soundPlayer" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="heroItemsUI" ref="heroItemsUI" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+	</bean>
+
+	<bean id="resourceValueClientUtils" class="momime.client.utils.ResourceValueClientUtilsImpl">
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+	</bean>
+	
+	<bean id="modifiedImageCache" class="com.ndg.utils.swing.ModifiedImageCacheImpl">
+		<property name="utils" ref="uiUtils" />
+	</bean>
+	
+	<bean id="clientCityCalculations" class="momime.client.calculations.ClientCityCalculationsImpl">
+		<property name="client" ref="client" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="cityCalculations" ref="cityCalculations" />
+		<property name="unrestReplacer" ref="unrestReplacer" />
+		<property name="growthReplacer" ref="growthReplacer" />
+		<property name="outpostGrowthReplacer" ref="outpostGrowthReplacer" />
+		<property name="outpostDeathReplacer" ref="outpostDeathReplacer" />
+		<property name="productionReplacer" ref="productionReplacer" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="unitStatsReplacer" ref="unitStatsReplacer" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="cityProductionCalculations" ref="cityProductionCalculations" />
+	</bean>
+
+	<bean id="tileSetBitmaskGenerator" class="momime.client.calculations.TileSetBitmaskGeneratorImpl">
+		<property name="client" ref="client" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="combatMapUtils" ref="combatMapUtils" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>
+
+	<bean id="overlandMapBitmapGenerator" class="momime.client.calculations.OverlandMapBitmapGeneratorImpl">
+		<property name="client" ref="client" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="utils" ref="uiUtils" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="tileSetBitmaskGenerator" ref="tileSetBitmaskGenerator" />
+		<property name="movementUtils" ref="movementUtils" />
+	</bean>
+	
+	<bean id="miniMapBitmapGenerator" class="momime.client.calculations.MiniMapBitmapGeneratorImpl">
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+	
+	<bean id="combatMapBitmapGenerator" class="momime.client.calculations.CombatMapBitmapGeneratorImpl">
+		<property name="client" ref="client" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="utils" ref="uiUtils" />
+		<property name="combatMapUtils" ref="combatMapUtils" />
+		<property name="tileSetBitmaskGenerator" ref="tileSetBitmaskGenerator" />
+	</bean>
+	
+	<bean id="overlandMapProcessing" class="momime.client.process.OverlandMapProcessingImpl">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="unitVisibilityUtils" ref="unitVisibilityUtils" />
+		<property name="pendingMovementUtils" ref="pendingMovementUtils" />
+		<property name="cityCalculations" ref="cityCalculations" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="unitMovement" ref="unitMovement" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="memoryGridCellUtils" ref="memoryGridCellUtils" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+	</bean>
+
+	<bean id="combatMapProcessing" class="momime.client.process.CombatMapProcessingImpl">
+		<property name="client" ref="client" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+	</bean>
+	
+	<bean id="playerColourImageGenerator" class="momime.client.ui.PlayerColourImageGeneratorImpl">
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+		<property name="modifiedImageCache" ref="modifiedImageCache" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+	
+	<bean id="newTurnMessageProcessing" class="momime.client.newturnmessages.NewTurnMessageProcessingImpl">
+		<property name="client" ref="client" />
+		<property name="newTurnMessagesFactory" ref="newTurnMessagesFactory" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+	</bean>
+
+	<bean id="wizardClientUtils" class="momime.client.utils.WizardClientUtilsImpl">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+
+	<bean id="spellClientUtils" class="momime.client.utils.SpellClientUtilsImpl">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="spellUtils" ref="spellUtils" />
+	</bean>
+
+	<bean id="playerPickClientUtils" class="momime.client.utils.PlayerPickClientUtilsImpl">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="client" ref="client" />
+		<property name="randomUtils" ref="randomUtils" />
+	</bean>
+	
+	<bean id="heroItemClientUtils" class="momime.client.utils.HeroItemClientUtilsImpl" />
+
+	<bean id="memoryMaintainedSpellClientUtils" class="momime.client.utils.MemoryMaintainedSpellClientUtilsImpl">
+		<property name="client" ref="client" />
+		<property name="spellTargetingUtils" ref="spellTargetingUtils" />
+	</bean>
+	
+	<bean id="combatSpellClientUtils" class="momime.client.utils.CombatSpellClientUtilsImpl">
+		<property name="client" ref="client" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="variableManaUI" ref="variableManaUI" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="spellTargetingUtils" ref="spellTargetingUtils" />
+		<property name="spellClientUtils" ref="spellClientUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="kindOfSpellUtils" ref="kindOfSpellUtils" />
+		<property name="sampleUnitUtils" ref="sampleUnitUtils" />
+		<property name="movementUtils" ref="movementUtils" />
+	</bean>
+	
+	<!-- Language variable replacers -->
+	
+	<bean id="unrestReplacer" class="momime.client.language.replacer.CityUnrestLanguageVariableReplacerImpl">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="growthReplacer" class="momime.client.language.replacer.CityGrowthRateLanguageVariableReplacerImpl">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="client" ref="client" />
+	</bean>
+
+	<bean id="outpostGrowthReplacer" class="momime.client.language.replacer.OutpostGrowthChanceLanguageVariableReplacerImpl">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="outpostDeathReplacer" class="momime.client.language.replacer.OutpostDeathChanceLanguageVariableReplacerImpl">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="productionReplacer" class="momime.client.language.replacer.CityProductionLanguageVariableReplacerImpl">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="client" ref="client" />
+	</bean>
+
+	<bean id="unitStatsReplacer" class="momime.client.language.replacer.UnitStatsLanguageVariableReplacerImpl">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="memoryCombatAreaEffectUtils" ref="memoryCombatAreaEffectUtils" />
+	</bean>
+	
+	<bean id="springEvaluationContextRoot" class="momime.client.language.replacer.SpringEvaluationContextRoot">
+		<constructor-arg ref="graphicsDatabase" />
+		<constructor-arg ref="client" />
+	</bean>
+	
+	<bean id="springEvaluationContext" class="org.springframework.expression.spel.support.StandardEvaluationContext">
+		<!-- Trying to set this via the rootObject property gives an error because getRootObject doesn't return the same type -->
+		<constructor-arg ref="springEvaluationContextRoot" />
+	</bean>
+	
+	<bean id="springExpressionReplacer" class="momime.client.language.replacer.SpringExpressionReplacerImpl">
+		<property name="evaluationContext" ref="springEvaluationContext" />
+		<property name="classpathResource" value="true" />
+		<property name="htmlImage" value="true" />
+	</bean>
+
+	<!-- Fonts
+		Having to use same font for medium and large sizes, because I can't find anywhere a decent
+		Old English / Blackletter style font with sufficient foreign char support -->
+	
+	<bean id="fontFactory" class="momime.client.ui.fonts.FontFactoryImpl" />
+
+	<bean id="mediumFontTTF" class="java.awt.Font" factory-bean="fontFactory" factory-method="loadFont">
+		<constructor-arg value="/momime.client.ui.fonts/KingthingsPetrock.ttf" />
+	</bean>
+
+	<bean id="largeFont" class="java.awt.Font" factory-bean="mediumFontTTF" factory-method="deriveFont">
+		<constructor-arg value="20.0" />
+	</bean>
+
+	<bean id="mediumFont" class="java.awt.Font" factory-bean="mediumFontTTF" factory-method="deriveFont">
+		<constructor-arg value="15.0" />
+	</bean>
+
+	<bean id="smallFontTTF" class="java.awt.Font" factory-bean="fontFactory" factory-method="loadFont">
+		<constructor-arg value="/momime.client.ui.fonts/Aclonica.ttf" />
+	</bean>
+
+	<bean id="smallFont" class="java.awt.Font" factory-bean="smallFontTTF" factory-method="deriveFont">
+		<constructor-arg value="10.0" />
+	</bean>
+
+	<bean id="tinyFontTTF" class="java.awt.Font" factory-bean="fontFactory" factory-method="loadFont">
+		<constructor-arg value="/momime.client.ui.fonts/DreamOrphanage.ttf" />
+	</bean>
+
+	<bean id="tinyFont" class="java.awt.Font" factory-bean="tinyFontTTF" factory-method="deriveFont">
+		<constructor-arg value="11.0" />
+	</bean>
+	
+	<!-- Drag and drop support -->
+	
+	<bean id="transferableFactory" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="momime.client.ui.draganddrop.TransferableFactory" />
+	</bean>
+	
+	<bean id="heroItemFlavour" class="java.awt.datatransfer.DataFlavor">
+		<constructor-arg value="#{T(java.awt.datatransfer.DataFlavor).javaJVMLocalObjectMimeType + ';class=momime.common.messages.NumberedHeroItem'}" />
+	</bean>
+	
+	<bean id="transferableHeroItem" class="momime.client.ui.draganddrop.TransferableHeroItem" scope="prototype">
+		<property name="heroItemFlavour" ref="heroItemFlavour" />
+	</bean>
+	
+	<!-- UI components -->
+
+	<bean id="mainMenuUI" class="momime.client.ui.frames.MainMenuUI">
+		<property name="version" value="${momime.client.version}" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="connectToServerUI" ref="connectToServerUI" />
+		<property name="newGameUI" ref="newGameUI" />
+		<property name="joinGameUI" ref="joinGameUI" />
+		<property name="optionsUI" ref="optionsUI" />
+		<property name="client" ref="client" />
+		<property name="anim" ref="anim" />
+		<property name="musicPlayer" ref="musicPlayer" />
+	</bean>
+
+	<bean id="connectToServerUI" class="momime.client.ui.frames.ConnectToServerUI">
+		<property name="largeFont" ref="largeFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+	</bean>
+
+	<bean id="newGameLayoutMain" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-Main.xml" />
+	</bean>
+
+	<bean id="newGameLayoutNew" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-New.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutMapSize" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-MapSize.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutLandProportion" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-LandProportion.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutNodes" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-Nodes.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutDifficulty1" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-Difficulty1.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutDifficulty2" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-Difficulty2.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutDifficulty3" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-Difficulty3.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutNodeDifficulty" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-NodeDifficulty.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutFogOfWar" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-FogOfWar.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutUnits" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-UnitSettings.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutSpells" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-SpellSettings.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutHeroItems" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-HeroItemSettings.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutDebug" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-Debug.xml" />
+	</bean>
+
+	<bean id="newGameLayoutFlagColour" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-FlagColour.xml" />
+	</bean>
+	
+	<bean id="newGameLayoutPicks" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-Picks.xml" />
+	</bean>
+
+	<bean id="newGameLayoutWait" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewGameUI-Wait.xml" />
+	</bean>
+	
+	<bean id="newGameUI" class="momime.client.ui.frames.NewGameUI">
+		<property name="newGameLayoutMain" ref="newGameLayoutMain" />
+		<property name="newGameLayoutNew" ref="newGameLayoutNew" />
+		<property name="newGameLayoutMapSize" ref="newGameLayoutMapSize" />
+		<property name="newGameLayoutLandProportion" ref="newGameLayoutLandProportion" />
+		<property name="newGameLayoutNodes" ref="newGameLayoutNodes" />
+		<property name="newGameLayoutDifficulty1" ref="newGameLayoutDifficulty1" />
+		<property name="newGameLayoutDifficulty2" ref="newGameLayoutDifficulty2" />
+		<property name="newGameLayoutDifficulty3" ref="newGameLayoutDifficulty3" />
+		<property name="newGameLayoutNodeDifficulty" ref="newGameLayoutNodeDifficulty" />
+		<property name="newGameLayoutFogOfWar" ref="newGameLayoutFogOfWar" />
+		<property name="newGameLayoutUnits" ref="newGameLayoutUnits" />
+		<property name="newGameLayoutSpells" ref="newGameLayoutSpells" />
+		<property name="newGameLayoutHeroItems" ref="newGameLayoutHeroItems" />
+		<property name="newGameLayoutDebug" ref="newGameLayoutDebug" />
+		<property name="newGameLayoutFlagColour" ref="newGameLayoutFlagColour" />
+		<property name="newGameLayoutPicks" ref="newGameLayoutPicks" />
+		<property name="newGameLayoutWait" ref="newGameLayoutWait" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="randomUtils" ref="randomUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="helpUI" ref="helpUI" />
+		<property name="playerPickClientUtils" ref="playerPickClientUtils" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="combatMapUtils" ref="combatMapUtils" />
+	</bean>
+
+	<bean id="joinGameLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/JoinGameUI.xml" />
+	</bean>
+
+	<bean id="joinGameUI" class="momime.client.ui.frames.JoinGameUI">
+		<property name="joinGameLayout" ref="joinGameLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="tinyFont" ref="tinyFont" />
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="loadGameUI" class="momime.client.ui.frames.LoadGameUI">
+		<property name="joinGameLayout" ref="joinGameLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="tinyFont" ref="tinyFont" />
+		<property name="client" ref="client" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+	</bean>
+
+	<bean id="overlandMapRightHandPanelLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.panels/OverlandMapRightHandPanel.xml" />
+	</bean>
+	
+	<bean id="surveyorLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.panels/OverlandMapRightHandPanel-Surveyor.xml" />
+	</bean>
+	
+	<bean id="economyLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.panels/OverlandMapRightHandPanel-Economy.xml" />
+	</bean>
+	
+	<bean id="overlandMapRightHandPanel" class="momime.client.ui.panels.OverlandMapRightHandPanel">
+		<property name="overlandMapRightHandPanelLayout" ref="overlandMapRightHandPanelLayout" />
+		<property name="surveyorLayout" ref="surveyorLayout" />
+		<property name="economyLayout" ref="economyLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="client" ref="client" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="resourceValueUtils" ref="resourceValueUtils" />
+		<property name="pendingMovementUtils" ref="pendingMovementUtils" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+		<property name="uiComponentFactory" ref="uiComponentFactory" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="memoryGridCellUtils" ref="memoryGridCellUtils" />
+		<property name="cityCalculations" ref="cityCalculations" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="spellUtils" ref="spellUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="miniMapBitmapGenerator" ref="miniMapBitmapGenerator" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="diplomacyUI" ref="diplomacyUI" />
+	</bean>
+
+	<bean id="overlandMapUI" class="momime.client.ui.frames.OverlandMapUIImpl">
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="client" ref="client" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="memoryGridCellUtils" ref="memoryGridCellUtils" />
+		<property name="utils" ref="uiUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="overlandMapBitmapGenerator" ref="overlandMapBitmapGenerator" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="magicSlidersUI" ref="magicSlidersUI" />
+		<property name="spellBookUI" ref="spellBookUI" />
+		<property name="citiesListUI" ref="citiesListUI" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="selectAdvisorUI" ref="selectAdvisorUI" />
+		<property name="optionsUI" ref="optionsUI" />
+		<property name="heroItemsUI" ref="heroItemsUI" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="spellTargetingUtils" ref="spellTargetingUtils" />
+		<property name="zoneAI" ref="zoneAI" />
+		<property name="damageCalculationsUI" ref="damageCalculationsUI" />
+		<property name="unitVisibilityUtils" ref="unitVisibilityUtils" />
+		<property name="booleanMapAreaOperations3D" ref="booleanMapAreaOperations3D" />
+		<property name="kindOfSpellUtils" ref="kindOfSpellUtils" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="chooseCitySpellEffectUI" ref="chooseCitySpellEffectUI" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+
+	<bean id="magicSlidersLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/MagicSlidersUI.xml" />
+	</bean>
+
+	<bean id="magicSlidersUI" class="momime.client.ui.frames.MagicSlidersUI">
+		<property name="magicSlidersLayout" ref="magicSlidersLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="client" ref="client" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="resourceValueUtils" ref="resourceValueUtils" />
+		<property name="skillCalculations" ref="skillCalculations" />
+		<property name="spellUtils" ref="spellUtils" />
+		<property name="uiComponentFactory" ref="uiComponentFactory" />
+		<property name="alchemyUI" ref="alchemyUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="memoryMaintainedSpellTableCellRenderer" ref="memoryMaintainedSpellTableCellRenderer" />
+		<property name="helpUI" ref="helpUI" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+
+	<bean id="alchemyUI" class="momime.client.ui.frames.AlchemyUI">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="client" ref="client" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="resourceValueUtils" ref="resourceValueUtils" />
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+
+	<bean id="newTurnMessageRenderer" class="momime.client.ui.renderer.NewTurnMessageRenderer">
+		<property name="utils" ref="uiUtils" />
+	</bean>
+
+	<bean id="newTurnMessagesLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/NewTurnMessagesUI.xml" />
+	</bean>
+
+	<bean id="newTurnMessagesUI" class="momime.client.ui.frames.NewTurnMessagesUI">
+		<property name="newTurnMessagesLayout" ref="newTurnMessagesLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="utils" ref="uiUtils" />
+		<property name="anim" ref="anim" />
+		<property name="newTurnMessageRenderer" ref="newTurnMessageRenderer" />
+	</bean>
+	
+	<bean id="spellBookLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/SpellBookUI.xml" />
+	</bean>
+	
+	<bean id="spellLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/SpellBookUI-Spell.xml" />
+	</bean>
+
+	<bean id="compactLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/SpellBookUI-Compact.xml" />
+	</bean>
+	
+	<bean id="spellBookUI" class="momime.client.ui.frames.SpellBookNewUI">
+		<property name="spellBookLayout" ref="spellBookLayout" />
+		<property name="spellLayout" ref="spellLayout" />
+		<property name="compactLayout" ref="compactLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="spellUtils" ref="spellUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="spellTargetingUtils" ref="spellTargetingUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="helpUI" ref="helpUI" />
+		<property name="variableManaUI" ref="variableManaUI" />
+		<property name="createArtifactUI" ref="createArtifactUI" />
+		<property name="memoryCombatAreaEffectUtils" ref="memoryCombatAreaEffectUtils" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="memoryMaintainedSpellClientUtils" ref="memoryMaintainedSpellClientUtils" />		
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="spellClientUtils" ref="spellClientUtils" />
+		<property name="soundPlayer" ref="soundPlayer" />
+	</bean>
+
+	<bean id="combatLayoutMain" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/CombatUI-Main.xml" />
+	</bean>
+
+	<bean id="combatLayoutBottom" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/CombatUI-Bottom.xml" />
+	</bean>
+
+	<bean id="combatUI" class="momime.client.ui.frames.CombatUI">
+		<property name="combatLayoutMain" ref="combatLayoutMain" />
+		<property name="combatLayoutBottom" ref="combatLayoutBottom" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="combatMapBitmapGenerator" ref="combatMapBitmapGenerator" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="combatMapUtils" ref="combatMapUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="anim" ref="anim" />
+		<property name="combatMapProcessing" ref="combatMapProcessing" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="resourceValueUtils" ref="resourceValueUtils" />
+		<property name="spellCalculations" ref="spellCalculations" />
+		<property name="memoryGridCellUtils" ref="memoryGridCellUtils" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="spellBookUI" ref="spellBookUI" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="helpUI" ref="helpUI" />
+		<property name="damageCalculationsUI" ref="damageCalculationsUI" />
+		<property name="variableManaUI" ref="variableManaUI" />
+		<property name="castCombatSpellFromUI" ref="castCombatSpellFromUI" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="combatSpellClientUtils" ref="combatSpellClientUtils" />
+		<property name="unitMovement" ref="unitMovement" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="unitVisibilityUtils" ref="unitVisibilityUtils" />
+		<property name="modifiedImageCache" ref="modifiedImageCache" />
+		<property name="combatFleeUtils" ref="combatFleeUtils" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+	</bean>
+
+	<bean id="castCombatSpellFromUI" class="momime.client.ui.dialogs.CastCombatSpellFromUI">
+		<property name="selectAdvisorLayout" ref="selectAdvisorLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="client" ref="client" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="combatUI" ref="combatUI" />
+	</bean>
+
+	<bean id="chooseCitySpellEffectUI" class="momime.client.ui.dialogs.ChooseCitySpellEffectUI">
+		<property name="selectAdvisorLayout" ref="selectAdvisorLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="client" ref="client" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+	</bean>
+
+	<bean id="razeCityLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/RazeCityUI.xml" />
+	</bean>
+
+	<bean id="razeCityUI" class="momime.client.ui.dialogs.RazeCityUI">
+		<property name="razeCityLayout" ref="razeCityLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="smallFont" ref="smallFont" />
+	</bean>
+
+	<bean id="selectAdvisorLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/SelectAdvisorUI.xml" />
+	</bean>
+
+	<bean id="selectAdvisorUI" class="momime.client.ui.frames.SelectAdvisorUI">
+		<property name="selectAdvisorLayout" ref="selectAdvisorLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="queuedSpellsUI" ref="queuedSpellsUI" />
+		<property name="taxRateUI" ref="taxRateUI" />
+		<property name="wizardsUI" ref="wizardsUI" />
+		<property name="historyUI" ref="historyUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+	</bean>
+
+	<bean id="taxRateUI" class="momime.client.ui.frames.TaxRateUI">
+		<property name="selectAdvisorLayout" ref="selectAdvisorLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="client" ref="client" />
+		<property name="textUtils" ref="textUtils" />
+	</bean>
+
+	<bean id="queuedSpellsLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/QueuedSpellsUI.xml" />
+	</bean>
+
+	<bean id="queuedSpellsUI" class="momime.client.ui.frames.QueuedSpellsUI">
+		<property name="queuedSpellsLayout" ref="queuedSpellsLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="queuedSpellListCellRenderer" ref="queuedSpellListCellRenderer" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+	</bean>
+
+	<bean id="wizardsLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/WizardsUI.xml" />
+	</bean>
+
+	<bean id="wizardsUI" class="momime.client.ui.frames.WizardsUI">
+		<property name="wizardsLayout" ref="wizardsLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="helpUI" ref="helpUI" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="playerPickClientUtils" ref="playerPickClientUtils" />
+		<property name="resourceValueUtils" ref="resourceValueUtils" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="spellTargetingUtils" ref="spellTargetingUtils" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="diplomacyUI" ref="diplomacyUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+	</bean>
+	
+	<bean id="optionsLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/OptionsUI.xml" />
+	</bean>
+
+	<bean id="optionsUI" class="momime.client.ui.frames.OptionsUI">
+		<property name="version" value="${momime.client.version}" />
+		<property name="optionsLayout" ref="optionsLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="overlandMapBitmapGenerator" ref="overlandMapBitmapGenerator" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="client" ref="client" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+	</bean>
+
+	<bean id="helpUI" class="momime.client.ui.frames.HelpUI">
+		<property name="newTurnMessagesLayout" ref="newTurnMessagesLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="unitStatsReplacer" ref="unitStatsReplacer" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="spellClientUtils" ref="spellClientUtils" />
+		<property name="client" ref="client" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="spellUtils" ref="spellUtils" />
+		<property name="springExpressionReplacer" ref="springExpressionReplacer" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+	
+	<bean id="damageCalculationsLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/DamageCalculationsUI.xml" />
+	</bean>
+
+	<bean id="damageCalculationsUI" class="momime.client.ui.frames.DamageCalculationsUI">
+		<property name="damageCalculationsLayout" ref="damageCalculationsLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="tinyFont" ref="tinyFont" />
+	</bean>
+	
+	<bean id="variableManaLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/VariableManaUI.xml" />
+	</bean>
+	
+	<bean id="variableManaUI" class="momime.client.ui.dialogs.VariableManaUI">
+		<property name="variableManaLayout" ref="variableManaLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="spellUtils" ref="spellUtils" />
+		<property name="client" ref="client" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="spellBookUI" ref="spellBookUI" />
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+	
+	<bean id="createArtifactLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/CreateArtifactUI.xml" />
+	</bean>
+
+	<bean id="createArtifactUI" class="momime.client.ui.frames.CreateArtifactUI">
+		<property name="createArtifactLayout" ref="createArtifactLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="client" ref="client" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="heroItemCalculations" ref="heroItemCalculations" />
+		<property name="heroItemClientUtils" ref="heroItemClientUtils" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="spellUtils" ref="spellUtils" />
+		<property name="spellBookUI" ref="spellBookUI" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="modifiedImageCache" ref="modifiedImageCache" />
+	</bean>
+	
+	<bean id="citiesListLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/CitiesListUI.xml" />
+	</bean>
+
+	<bean id="citiesListUI" class="momime.client.ui.frames.CitiesListUI">
+		<property name="citiesListLayout" ref="citiesListLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="client" ref="client" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="miniMapBitmapGenerator" ref="miniMapBitmapGenerator" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="cityProductionCalculations" ref="cityProductionCalculations" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="citiesListCellRenderer" ref="citiesListCellRenderer" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="clientCityCalculations" ref="clientCityCalculations" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="resourceValueUtils" ref="resourceValueUtils" />
+	</bean>
+	
+	<bean id="heroItemsLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/HeroItemsUI.xml" />
+	</bean>
+
+	<bean id="heroItemsUI" class="momime.client.ui.frames.HeroItemsUI">
+		<property name="heroItemsLayout" ref="heroItemsLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="client" ref="client" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="transferableFactory" ref="transferableFactory" />
+		<property name="alchemyUI" ref="alchemyUI" />
+		<property name="heroItemFlavour" ref="heroItemFlavour" />
+		<property name="unassignedHeroItemCellRenderer" ref="unassignedHeroItemCellRenderer" />
+		<property name="heroTableCellRenderer" ref="heroTableCellRenderer" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="heroItemCalculations" ref="heroItemCalculations" />
+		<property name="resourceValueUtils" ref="resourceValueUtils" />
+		<property name="helpUI" ref="helpUI" />
+		<property name="modifiedImageCache" ref="modifiedImageCache" />
+	</bean>
+
+	<bean id="historyLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/HistoryUI.xml" />
+	</bean>
+
+	<bean id="historyUI" class="momime.client.ui.frames.HistoryUI">
+		<property name="historyLayout" ref="historyLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="client" ref="client" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+
+	<bean id="diplomacyLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/DiplomacyUI.xml" />
+	</bean>
+
+	<bean id="diplomacyUI" class="momime.client.ui.frames.DiplomacyUI">
+		<property name="diplomacyLayout" ref="diplomacyLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="client" ref="client" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="clientConfigMarshaller" ref="clientConfigMarshaller" />
+		<property name="clientConfigLocation" value="${configDir}MoMIMEClientConfig.xml" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="spellClientUtils" ref="spellClientUtils" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="randomUtils" ref="randomUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="resourceValueUtils" ref="resourceValueUtils" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="modifiedImageCache" ref="modifiedImageCache" />
+	</bean>
+	
+	<!-- Prototype UI components -->
+
+	<bean id="buildingListCellRenderer" class="momime.client.ui.renderer.BuildingListCellRenderer" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="anim" ref="anim" />
+	</bean>
+
+	<bean id="unitListCellRenderer" class="momime.client.ui.renderer.UnitListCellRenderer" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>
+
+	<bean id="unitAttributeListCellRenderer" class="momime.client.ui.renderer.UnitAttributeListCellRenderer" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+	</bean>
+
+	<bean id="unitSkillListCellRenderer" class="momime.client.ui.renderer.UnitSkillListCellRenderer" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="unitStatsReplacer" ref="unitStatsReplacer" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+	</bean>
+
+	<bean id="memoryMaintainedSpellListCellRenderer" class="momime.client.ui.renderer.MemoryMaintainedSpellListCellRenderer" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+	</bean>
+
+	<bean id="memoryMaintainedSpellTableCellRenderer" class="momime.client.ui.renderer.MemoryMaintainedSpellTableCellRenderer" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+	</bean>
+
+	<bean id="queuedSpellListCellRenderer" class="momime.client.ui.renderer.QueuedSpellListCellRenderer" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="spellUtils" ref="spellUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+
+	<bean id="armyListCellRenderer" class="momime.client.ui.renderer.ArmyListCellRenderer" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>
+
+	<bean id="unassignedHeroItemLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/HeroItemsUI-Unassigned.xml" />
+	</bean>
+
+	<bean id="unassignedHeroItemCellRenderer" class="momime.client.ui.renderer.UnassignedHeroItemCellRenderer" scope="prototype">
+		<property name="unassignedHeroItemLayout" ref="unassignedHeroItemLayout" />
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="modifiedImageCache" ref="modifiedImageCache" />
+	</bean>
+
+	<bean id="citiesListEntryLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/CitiesListUI-Row.xml" />
+	</bean>
+
+	<bean id="citiesListCellRenderer" class="momime.client.ui.renderer.CitiesListCellRenderer" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="client" ref="client" />
+		<property name="citiesListEntryLayout" ref="citiesListEntryLayout" />
+		<property name="utils" ref="uiUtils" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="cityCalculations" ref="cityCalculations" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="clientCityCalculations" ref="clientCityCalculations" />
+		<property name="citiesListUI" ref="citiesListUI" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="resourceValueUtils" ref="resourceValueUtils" />
+		<property name="cityProductionCalculations" ref="cityProductionCalculations" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="spellTargetingUtils" ref="spellTargetingUtils" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="chooseCitySpellEffectUI" ref="chooseCitySpellEffectUI" />
+	</bean>
+
+	<bean id="heroLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/HeroItemsUI-Hero.xml" />
+	</bean>
+
+	<bean id="heroTableCellRenderer" class="momime.client.ui.renderer.HeroTableCellRenderer" scope="prototype">
+		<property name="heroLayout" ref="heroLayout" />
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="modifiedImageCache" ref="modifiedImageCache" />
+	</bean>
+
+	<bean id="uiComponentFactory" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="momime.client.ui.components.UIComponentFactory" />
+	</bean>
+
+	<bean id="selectUnitButton" class="momime.client.ui.components.SelectUnitButton" scope="prototype">
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>
+
+	<bean id="unitRowDisplayButton" class="momime.client.ui.components.UnitRowDisplayButton" scope="prototype">
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+	</bean>
+
+	<bean id="magicSlider" class="momime.client.ui.components.MagicSlider" scope="prototype">
+		<property name="utils" ref="uiUtils" />
+	</bean>
+	
+	<!-- Prototype UI frames -->
+	
+	<bean id="prototypeFrameCreator" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="momime.client.ui.frames.PrototypeFrameCreator" />
+	</bean>
+
+	<bean id="messageBoxLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/MessageBoxUI.xml" />
+	</bean>
+	
+	<bean id="messageBoxUI" class="momime.client.ui.dialogs.MessageBoxUI" scope="prototype">
+		<property name="messageBoxLayout" ref="messageBoxLayout" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+		<property name="magicSlidersUI" ref="magicSlidersUI" />
+		<property name="wizardsUI" ref="wizardsUI" />
+	</bean>
+
+	<bean id="calculationBoxLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/CalculationBoxUI.xml" />
+	</bean>
+	
+	<bean id="calculationBoxUI" class="momime.client.ui.frames.CalculationBoxUI" scope="prototype">
+		<property name="calculationBoxLayout" ref="calculationBoxLayout" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+	</bean>
+
+	<bean id="editStringLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/EditStringUI.xml" />
+	</bean>
+	
+	<bean id="editStringUI" class="momime.client.ui.frames.EditStringUI" scope="prototype">
+		<property name="editStringLayout" ref="editStringLayout" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="cityViewPanel" class="momime.client.ui.panels.CityViewPanel" scope="prototype">	
+		<property name="client" ref="client" />
+		<property name="utils" ref="uiUtils" />
+		<property name="anim" ref="anim" />
+	</bean>
+
+	<bean id="cityViewLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/CityViewUI.xml" />
+	</bean>
+	
+	<bean id="cityViewUI" class="momime.client.ui.frames.CityViewUI" scope="prototype">
+		<property name="cityViewLayout" ref="cityViewLayout" />
+		<property name="client" ref="client" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="unitVisibilityUtils" ref="unitVisibilityUtils" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="cityCalculations" ref="cityCalculations" />
+		<property name="cityProductionCalculations" ref="cityProductionCalculations" />
+		<property name="clientCityCalculations" ref="clientCityCalculations" />
+		<property name="resourceValueClientUtils" ref="resourceValueClientUtils" />
+		<property name="resourceValueUtils" ref="resourceValueUtils" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="unitStatsReplacer" ref="unitStatsReplacer" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="anim" ref="anim" />
+		<property name="uiComponentFactory" ref="uiComponentFactory" />
+		<property name="overlandMapBitmapGenerator" ref="overlandMapBitmapGenerator" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="helpUI" ref="helpUI" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="sampleUnitUtils" ref="sampleUnitUtils" />
+		<property name="modifiedImageCache" ref="modifiedImageCache" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="cityViewPanel" ref="cityViewPanel" />																				<!-- So Spring will create and inject a new cityViewPanel for each cityViewUI -->
+		<property name="memoryMaintainedSpellListCellRenderer" ref="memoryMaintainedSpellListCellRenderer" />	<!-- So Spring will create and inject a new spell list renderer for each city view UI -->
+	</bean>
+	
+	<bean id="miniCityViewLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/MiniCityViewUI.xml" />
+	</bean>
+	
+	<bean id="miniCityViewUI" class="momime.client.ui.dialogs.MiniCityViewUI" scope="prototype">
+		<property name="miniCityViewLayout" ref="miniCityViewLayout" />
+		<property name="client" ref="client" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="soundPlayer" ref="soundPlayer" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="randomUtils" ref="randomUtils" />
+		<property name="cityViewPanel" ref="cityViewPanel" />									<!-- So Spring will create and inject a new cityViewPanel for each cityViewUI -->
+	</bean>
+
+	<bean id="unitInfoLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.panels/UnitInfoPanel.xml" />
+	</bean>
+
+	<bean id="unitInfoPanel" class="momime.client.ui.panels.UnitInfoPanel" scope="prototype">
+		<property name="unitInfoLayout" ref="unitInfoLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="resourceValueClientUtils" ref="resourceValueClientUtils" />
+		<property name="anim" ref="anim" />
+		<property name="clientCityCalculations" ref="clientCityCalculations" />
+		<property name="client" ref="client" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="helpUI" ref="helpUI" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="cityProductionCalculations" ref="cityProductionCalculations" />
+		<property name="unitAttributeListCellRenderer" ref="unitAttributeListCellRenderer" />		<!-- So Spring will create and inject a new attribute list renderer for each unitInfoPanel -->
+		<property name="unitSkillListCellRenderer" ref="unitSkillListCellRenderer" />					<!-- So Spring will create and inject a new skill list renderer for each unitInfoPanel -->
+	</bean>	
+
+	<bean id="changeConstructionUI" class="momime.client.ui.frames.ChangeConstructionUI" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="anim" ref="anim" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="cityCalculations" ref="cityCalculations" />
+		<property name="clientCityCalculations" ref="clientCityCalculations" />
+		<property name="sampleUnitUtils" ref="sampleUnitUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="clientConfig" ref="clientConfig" />
+		<property name="buildingListCellRenderer" ref="buildingListCellRenderer" />		<!-- So Spring will create and inject a new building list renderer for each change construction UI -->
+		<property name="unitListCellRenderer" ref="unitListCellRenderer" />					<!-- So Spring will create and inject a new unit list renderer for each change construction UI -->
+		<property name="unitInfoPanel" ref="unitInfoPanel" />										<!-- So Spring will create and inject a new unitInfoPanel for each changeConstructionUI -->
+	</bean>
+	
+	<bean id="unitInfoUI" class="momime.client.ui.frames.UnitInfoUI" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="unitStatsReplacer" ref="unitStatsReplacer" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="unitInfoPanel" ref="unitInfoPanel" />										<!-- So Spring will create and inject a new unitInfoPanel for each unitInfoUI -->
+	</bean>
+
+	<bean id="heroOrUnitsOfferUI" class="momime.client.ui.frames.HeroOrUnitsOfferUI" scope="prototype">
+		<property name="client" ref="client" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="unitInfoPanel" ref="unitInfoPanel" />										<!-- So Spring will create and inject a new unitInfoPanel for each heroOrUnitsOfferUI -->
+	</bean>
+	
+	<bean id="overlandEnchantmentsLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/OverlandEnchantmentsUI.xml" />
+	</bean>
+	
+	<bean id="overlandEnchantmentsUI" class="momime.client.ui.dialogs.OverlandEnchantmentsUI" scope="prototype">
+		<property name="overlandEnchantmentsLayout" ref="overlandEnchantmentsLayout" />
+		<property name="client" ref="client" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="playerColourImageGenerator" ref="playerColourImageGenerator" />
+		<property name="magicSlidersUI" ref="magicSlidersUI" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="spellClientUtils" ref="spellClientUtils" />
+		<property name="wizardsUI" ref="wizardsUI" />
+	</bean>
+	
+	<bean id="combatEndedLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/CombatEndedUI.xml" />
+	</bean>
+	
+	<bean id="combatEndedUI" class="momime.client.ui.dialogs.CombatEndedUI" scope="prototype">
+		<property name="combatEndedLayout" ref="combatEndedLayout" />
+		<property name="client" ref="client" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="textUtils" ref="textUtils" />
+	</bean>
+
+	<bean id="unitRowDisplayLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/UnitRowDisplayUI.xml" />
+	</bean>
+	
+	<bean id="unitRowDisplayUI" class="momime.client.ui.dialogs.UnitRowDisplayUI" scope="prototype">
+		<property name="unitRowDisplayLayout" ref="unitRowDisplayLayout" />
+		<property name="client" ref="client" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="uiComponentFactory" ref="uiComponentFactory" />
+		<property name="unitClientUtils" ref="unitClientUtils" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+		<property name="spellTargetingUtils" ref="spellTargetingUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="spellClientUtils" ref="spellClientUtils" />
+		<property name="combatUI" ref="combatUI" />
+		<property name="spellUtils" ref="spellUtils" />
+	</bean>
+
+	<bean id="heroItemInfoLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.frames/HeroItemInfoUI.xml" />
+	</bean>
+	
+	<bean id="heroItemInfoUI" class="momime.client.ui.frames.HeroItemInfoUI" scope="prototype">
+		<property name="heroItemInfoLayout" ref="heroItemInfoLayout" />
+		<property name="client" ref="client" />
+		<property name="modifiedImageCache" ref="modifiedImageCache" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+	</bean>
+	
+	<bean id="heroItemOfferUI" class="momime.client.ui.frames.HeroItemOfferUI" scope="prototype">
+		<property name="heroItemInfoLayout" ref="heroItemInfoLayout" />
+		<property name="client" ref="client" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="newTurnMessagesUI" ref="newTurnMessagesUI" />
+		<property name="overlandMapRightHandPanel" ref="overlandMapRightHandPanel" />
+		<property name="modifiedImageCache" ref="modifiedImageCache" />
+	</bean>
+	
+	<bean id="treasureLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/TreasureUI.xml" />
+	</bean>
+	
+	<bean id="treasureUI" class="momime.client.ui.dialogs.TreasureUI" scope="prototype">
+		<property name="treasureLayout" ref="treasureLayout" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="unitStatsReplacer" ref="unitStatsReplacer" />
+		<property name="client" ref="client" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="clientConfig" ref="clientConfig" />
+	</bean>
+
+	<bean id="randomEventLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/RandomEventUI.xml" />
+	</bean>
+	
+	<bean id="randomEventUI" class="momime.client.ui.dialogs.RandomEventUI" scope="prototype">
+		<property name="randomEventLayout" ref="randomEventLayout" />
+		<property name="smallFont" ref="smallFont" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="client" ref="client" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="textUtils" ref="textUtils" />
+	</bean>
+
+	<bean id="wizardBanishedLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/WizardBanishedUI.xml" />
+	</bean>
+
+	<bean id="wizardBanishedUI" class="momime.client.ui.dialogs.WizardBanishedUI" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="wizardBanishedLayout" ref="wizardBanishedLayout" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="soundPlayer" ref="soundPlayer" />
+		<property name="client" ref="client" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+	</bean>
+	
+	<bean id="wizardWonLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/WizardWonUI.xml" />
+	</bean>
+
+	<bean id="wizardWonUI" class="momime.client.ui.dialogs.WizardWonUI" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="wizardWonLayout" ref="wizardWonLayout" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="client" ref="client" />
+	</bean>
+	
+	<bean id="spellOfMasteryStartLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/SpellOfMasteryStartUI.xml" />
+	</bean>
+
+	<bean id="spellOfMasteryStartUI" class="momime.client.ui.dialogs.SpellOfMasteryStartUI" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="spellOfMasteryStartLayout" ref="spellOfMasteryStartLayout" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="client" ref="client" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+	</bean>
+	
+	<bean id="spellOfMasteryEndLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/SpellOfMasteryEndUI.xml" />
+	</bean>
+
+	<bean id="spellOfMasteryEndUI" class="momime.client.ui.dialogs.SpellOfMasteryEndUI" scope="prototype">
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="spellOfMasteryEndLayout" ref="spellOfMasteryEndLayout" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="graphicsDB" ref="graphicsDatabase" />
+		<property name="musicPlayer" ref="musicPlayer" />
+		<property name="client" ref="client" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+	
+	<bean id="armyListLayout" class="com.ndg.utils.swing.layoutmanagers.xmllayout.XmlLayoutContainerEx" factory-bean="xmlLayoutUnmarshaller" factory-method="unmarshal" init-method="buildMaps">
+		<constructor-arg type="java.io.InputStream" value="/momime.client.ui.dialogs/ArmyListUI.xml" />
+	</bean>
+
+	<bean id="armyListUI" class="momime.client.ui.dialogs.ArmyListUI" scope="prototype">
+		<property name="armyListLayout" ref="armyListLayout" />
+		<property name="languageHolder" ref="languageHolder" />
+		<property name="languageChangeMaster" ref="optionsUI" />
+		<property name="utils" ref="uiUtils" />
+		<property name="largeFont" ref="largeFont" />
+		<property name="mediumFont" ref="mediumFont" />
+		<property name="client" ref="client" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="wizardClientUtils" ref="wizardClientUtils" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="miniMapBitmapGenerator" ref="miniMapBitmapGenerator" />
+		<property name="textUtils" ref="textUtils" />
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="prototypeFrameCreator" ref="prototypeFrameCreator" />
+		<property name="armyListCellRenderer" ref="armyListCellRenderer" />
+		<property name="heroItemsUI" ref="heroItemsUI" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="overlandMapUI" ref="overlandMapUI" />
+		<property name="overlandMapProcessing" ref="overlandMapProcessing" />
+	</bean>
+	
+</beans>

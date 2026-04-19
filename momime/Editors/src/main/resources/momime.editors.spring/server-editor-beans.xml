@@ -1,0 +1,740 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd" >
+
+	<import resource="../com.ndg.xmleditor.spring/common-editor-beans.xml"/>
+
+	<!-- XML -->
+
+	<bean id="momResourceResolver" class="momime.common.database.CommonXsdResourceResolver">
+		<constructor-arg ref="domImplementationRegistry" />
+	</bean>
+
+	<bean id="resourceResolver" class="com.ndg.xmleditor.XmlResourceResolver">
+		<property name="domImplementationRegistry" ref="domImplementationRegistry" />
+		<property name="secondaryResourceResolver" ref="momResourceResolver" />
+	</bean>
+
+	<bean id="schemaFactoryFactory" class="com.ndg.utils.SchemaFactoryFactory" />
+	
+	<bean id="schemaFactory" class="javax.xml.validation.SchemaFactory" factory-bean="schemaFactoryFactory" factory-method="createSchemaFactory">
+		<constructor-arg ref="resourceResolver" />
+	</bean>
+
+	<!-- MoM IME Server specific -->
+
+	<bean id="frameGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="100" />
+		<property name="imageColumns">
+			<list>
+				<value>imageFile</value>
+				<value>imageFlag</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="planeGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>planeDescription</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="productionTypeGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>productionTypeDescription</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="productionTypeImageGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="30" />
+		<property name="imageColumns">
+			<list>
+				<value>productionImageFile</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="mapFeatureGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="50" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>mapFeatureDescription</value>
+			</list>
+		</property>
+		<property name="imageColumns">
+			<list>
+				<value>overlandMapImageFile</value>
+				<value>overlandMapImageFileUP</value>
+				<value>monsterFoundImageFile</value>
+				<value>monsterFoundImageFileUP</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="tileTypeGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="50" />
+		<property name="imageColumns">
+			<list>
+				<value>monsterFoundImageFile</value>
+				<value>monsterFoundImageFileUP</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="tileTypeRoadGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="imageColumns">
+			<list>
+				<value>roadImageFile</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="pickTypeGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>pickTypeDescriptionSingular</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="pickTypeCountGrid" class="momime.editors.server.pickTypeCount.PickTypeCountGrid" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+	</bean>
+
+	<bean id="bookImageFileGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="imageColumns">
+			<list>
+				<value>bookImageFile</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="fatBookImageFileGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="imageColumns">
+			<list>
+				<value>fatBookImageFile</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="wizardGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="150" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>wizardName</value>
+			</list>
+		</property>
+		<property name="imageColumns">
+			<list>
+				<value>portraitImageFile</value>
+				<value>happyImageFile</value>
+				<value>madImageFile</value>
+				<value>standingImageFile</value>
+				<value>banishingImageFile</value>
+				<value>banishingHandImageFile</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="wizardPickCountGrid" class="momime.editors.server.wizardPickCount.WizardPickCountGrid" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+	</bean>
+
+	<bean id="populationTaskGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>populationTaskSingular</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="raceGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>raceNameSingular</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="raceCannotBuildGrid" class="momime.editors.server.raceCannotBuild.RaceCannotBuildGrid" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+	</bean>
+
+	<bean id="racePopulationTaskGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="50" />
+		<property name="imageColumns">
+			<list>
+				<value>civilianImageFile</value>
+				<value>civilianImageFileUP</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="buildingGrid" class="momime.editors.server.building.BuildingGrid" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="55" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>buildingName</value>
+			</list>
+		</property>
+		<property name="imageColumns">
+			<list>
+				<value>monsterFoundImageFile</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="experienceLevelGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="20" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>experienceLevelName</value>
+			</list>
+		</property>
+		<property name="imageColumns">
+			<list>
+				<value>experienceLevelImageFile</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="heroItemTypeGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>heroItemTypeDescription</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="heroItemTypeImageFileGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="imageColumns">
+			<list>
+				<value>heroItemTypeImageFile</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="heroItemSlotTypeGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>slotTypeDescription</value>
+			</list>
+		</property>
+		<property name="imageColumns">
+			<list>
+				<value>heroItemSlotTypeImageFile</value>
+				<value>heroItemSlotTypeImageFileWithBackground</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="heroItemBonusGrid" class="momime.editors.server.heroItemBonus.HeroItemBonusGrid" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>heroItemBonusDescription</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="heroItemGrid" class="momime.editors.server.heroItem.HeroItemGrid" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+	</bean>
+
+	<bean id="unitSkillGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>unitSkillDescription</value>
+			</list>
+		</property>
+		<property name="imageColumns">
+			<list>
+				<value>unitSkillImageFile</value>
+				<value>movementIconImageFile</value>
+				<value>unitSkillCombatOverlay</value>
+				<value>sampleTileImageFile</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="unitSkillWeaponGradeGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="imageColumns">
+			<list>
+				<value>skillImageFile</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="rangedAttackTypeWeaponGradeGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="imageColumns">
+			<list>
+				<value>unitDisplayRangedImageFile</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="rangedAttackTypeCombatImageGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="imageColumns">
+			<list>
+				<value>rangedAttackTypeCombatImageFile</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="unitGrid" class="momime.editors.server.unit.UnitGrid" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="85" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>unitName</value>
+				<value>unitNamePrefix</value>
+			</list>
+		</property>
+		<property name="imageColumns">
+			<list>
+				<value>unitOverlandImageFile</value>
+				<value>unitOverlandImageFileUP</value>
+				<value>unitOverlandImageFlag</value>
+				<value>unitOverlandImageFlagUP</value>
+				<value>unitSummonImageFile</value>
+				<value>heroPortraitImageFile</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="unitCombatImageGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="70" />
+		<property name="imageColumns">
+			<list>
+				<value>unitCombatImageFile</value>
+				<value>unitCombatImageFileUP</value>
+				<value>unitCombatShadowlessImageFile</value>
+				<value>unitCombatShadowlessImageFileUP</value>
+				<value>unitCombatShadowImageFile</value>
+				<value>unitCombatImageFlag</value>
+				<value>unitCombatImageFlagUP</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="heroNameGrid" class="momime.editors.server.heroName.HeroNameGrid" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>heroNameLang</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="combatAreaEffectGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>combatAreaEffectDescription</value>
+			</list>
+		</property>
+		<property name="imageColumns">
+			<list>
+				<value>combatAreaEffectImageFile</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="spellRankGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>spellRankDescription</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="spellBookSectionGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>spellBookSectionName</value>
+			</list>
+		</property>
+		<property name="imageColumns">
+			<list>
+				<value>tabImageFile</value>
+				<value>topperImageFile</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="spellGrid" class="momime.editors.server.spell.SpellGrid" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="120" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>spellName</value>
+			</list>
+		</property>
+		<property name="imageColumns">
+			<list>
+				<value>overlandEnchantmentImageFile</value>
+				<value>unitCanCastImageFile</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="citySpellEffectGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>citySpellEffectName</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="overlandMapSizeGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="descriptionColumns">
+			<list>
+				<value>overlandMapSizeDescription</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="landProportionGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>landProportionDescription</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="nodeStrengthGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>nodeStrengthDescription</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="difficultyLevelGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>difficultyLevelDescription</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="fogOfWarSettingGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>fogOfWarSettingDescription</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="unitSettingGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>unitSettingDescription</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="spellSettingGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="firstDescriptionColumnIndex" value="1" />
+		<property name="descriptionColumns">
+			<list>
+				<value>spellSettingDescription</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="cityImageGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="70" />
+		<property name="imageColumns">
+			<list>
+				<value>cityImageFile</value>
+				<value>cityImageFileUP</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="combatTileBorderImageGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="40" />
+		<property name="imageColumns">
+			<list>
+				<value>standardFile</value>
+				<value>wreckedFile</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="cityViewElementGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="50" />
+		<property name="imageColumns">
+			<list>
+				<value>cityViewImageFile</value>
+				<value>cityViewAlternativeImageFile</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="smoothedTileGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="imageColumns">
+			<list>
+				<value>tileFile</value>
+				<value>tileFileUP</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="animationGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="30" />
+		<property name="imageColumns">
+			<list>
+				<value>imageFile</value>
+				<value>imageFlag</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="wizardPersonalityGrid" class="momime.editors.server.wizardPersonality.WizardPersonalityGrid" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+	</bean>
+
+	<bean id="relationScoreGrid" class="com.ndg.xmleditor.grid.XmlEditorGridWithDescriptionsAndImages" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+		<property name="rowHeight" value="25" />
+		<property name="imageColumns">
+			<list>
+				<value>eyesLeftImage</value>
+				<value>eyesRightImage</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="editUnit" class="momime.editors.server.unit.EditUnit" scope="prototype">
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="utils" ref="utils" />
+	</bean>
+
+	<bean id="dispatcher" class="com.ndg.xmleditor.editor.XmlEditorDispatcher">
+		<property name="creator" ref="creator" />
+		<property name="gridBeansMap">
+			<map>
+				<entry key="frame" value="frameGrid" />
+				<entry key="plane" value="planeGrid" />
+				<entry key="productionType" value="productionTypeGrid" />
+				<entry key="productionTypeImage" value="productionTypeImageGrid" />
+				<entry key="mapFeature" value="mapFeatureGrid" />
+				<entry key="tileType" value="tileTypeGrid" />
+				<entry key="tileTypeRoad" value="tileTypeRoadGrid" />
+				<entry key="pickType" value="pickTypeGrid" />
+				<entry key="pickTypeCount" value="pickTypeCountGrid" />
+				<entry key="bookImageFile" value="bookImageFileGrid" />
+				<entry key="fatBookImageFile" value="fatBookImageFileGrid" />
+				<entry key="wizard" value="wizardGrid" />
+				<entry key="wizardPickCount" value="wizardPickCountGrid" />
+				<entry key="populationTask" value="populationTaskGrid" />
+				<entry key="race" value="raceGrid" />
+				<entry key="raceCannotBuild" value="raceCannotBuildGrid" />
+				<entry key="racePopulationTask" value="racePopulationTaskGrid" />
+				<entry key="building" value="buildingGrid" />
+				<entry key="experienceLevel" value="experienceLevelGrid" />
+				<entry key="heroItemType" value="heroItemTypeGrid" />
+				<entry key="heroItemTypeImageFile" value="heroItemTypeImageFileGrid" />
+				<entry key="heroItemSlotType" value="heroItemSlotTypeGrid" />
+				<entry key="heroItemBonus" value="heroItemBonusGrid" />
+				<entry key="heroItem" value="heroItemGrid" />
+				<entry key="unitSkill" value="unitSkillGrid" />
+				<entry key="unitSkillWeaponGrade" value="unitSkillWeaponGradeGrid" />
+				<entry key="rangedAttackTypeWeaponGrade" value="rangedAttackTypeWeaponGradeGrid" />
+				<entry key="rangedAttackTypeCombatImage" value="rangedAttackTypeCombatImageGrid" />
+				<entry key="unit" value="unitGrid" />
+				<entry key="unitCombatImage" value="unitCombatImageGrid" />
+				<entry key="heroName" value="heroNameGrid" />
+				<entry key="combatAreaEffect" value="combatAreaEffectGrid" />
+				<entry key="spellRank" value="spellRankGrid" />
+				<entry key="spellBookSection" value="spellBookSectionGrid" />
+				<entry key="spell" value="spellGrid" />
+				<entry key="citySpellEffect" value="citySpellEffectGrid" />
+				<entry key="overlandMapSize" value="overlandMapSizeGrid" />
+				<entry key="landProportion" value="landProportionGrid" />
+				<entry key="nodeStrength" value="nodeStrengthGrid" />
+				<entry key="difficultyLevel" value="difficultyLevelGrid" />
+				<entry key="fogOfWarSetting" value="fogOfWarSettingGrid" />
+				<entry key="unitSetting" value="unitSettingGrid" />
+				<entry key="spellSetting" value="spellSettingGrid" />
+				<entry key="cityImage" value="cityImageGrid" />
+				<entry key="combatTileBorderImage" value="combatTileBorderImageGrid" />
+				<entry key="cityViewElement" value="cityViewElementGrid" />
+				<entry key="smoothedTile" value="smoothedTileGrid" />
+				<entry key="wizardPersonality" value="wizardPersonalityGrid" />
+				<entry key="relationScore" value="relationScoreGrid" />
+				<entry key="default" value="grid" />
+			</map>
+		</property>
+		<property name="recordPanelBeansMap">
+			<map>
+				<entry key="default" value="panel" />
+			</map>
+		</property>
+		<property name="editRecordBeansMap">
+			<map>
+				<entry key="unit" value="editUnit" />
+				<entry key="default" value="edit" />
+			</map>
+		</property>
+		<property name="dataTypesMap">
+			<map>
+				<entry key="boolean" value="booleanField" />
+				<entry key="string" value="textArea" />		<!-- xsd:string assumed to be multi-line; xsd:normalizedString assumed to be single-line -->
+				<entry key="default" value="textField" />
+			</map>
+		</property>
+	</bean>
+
+	<!-- General editor -->
+	
+	<bean id="ask" class="com.ndg.xmleditor.editor.AskForXsdAndXmlFileLocations" init-method="init">
+		<property name="utils" ref="utils" />
+		<property name="dispatcher" ref="dispatcher" />
+		<property name="parser" ref="parser" />
+		<property name="schemaFactory" ref="schemaFactory" />
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="xsdUnmarshaller" ref="xsdUnmarshaller" />
+		
+		<property name="resourceResolver" ref="resourceResolver" />
+		<property name="loadXsdFromClasspath" value="true" />
+		<property name="xsdFilename" value="/momime.common.database/MoMIMECommonDatabase.xsd" />
+	</bean>
+	
+	<bean id="mdiEditor" class="com.ndg.xmleditor.editor.XmlEditorMain">
+		<property name="dispatcher" ref="dispatcher" />
+	</bean>
+	
+</beans>

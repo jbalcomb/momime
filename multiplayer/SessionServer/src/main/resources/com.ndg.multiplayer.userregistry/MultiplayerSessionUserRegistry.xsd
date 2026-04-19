@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mps="http://www.ndg.com/multiplayer/sessionbase"
+	xmlns:mpur="http://www.ndg.com/multiplayer/userregistry" targetNamespace="http://www.ndg.com/multiplayer/userregistry">
+
+	<xsd:import namespace="http://www.ndg.com/multiplayer/sessionbase"/>
+
+	<!-- Defines structure of user registry XML, storing list of player IDs, names and passwords -->
+
+	<xsd:complexType name="player">
+		<xsd:annotation>
+			<xsd:documentation>Holds information about one registered user</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="playerName" type="mps:playerName"/>
+			<xsd:element minOccurs="1" maxOccurs="1" name="playerPassword" type="mps:playerPassword"/>
+			<xsd:element minOccurs="1" maxOccurs="1" name="nextAvailableSavedGameID" type="mps:savedGameID"/>
+		</xsd:sequence>
+		<xsd:attribute name="playerID" type="mps:playerID" use="required"/>
+	</xsd:complexType>
+	
+	<xsd:element name="userRegistry">
+		<xsd:annotation>
+			<xsd:documentation>Holds information about all registered users</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element minOccurs="1" maxOccurs="1" name="nextAvailablePlayerID" type="mps:playerID"/>
+				<xsd:element minOccurs="0" maxOccurs="unbounded" name="player" type="mpur:player"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	
+</xsd:schema>

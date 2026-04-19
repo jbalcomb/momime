@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:test="http://www.ndg.com/xmleditor/test" targetNamespace="http://www.ndg.com/xmleditor/test">
+
+	<!-- Example XSD where the top level element references a separate complex type -->
+
+	<xsd:element name="mainElement" type="test:mainType" />
+
+	<xsd:complexType name="mainType" />
+
+	<xsd:simpleType name="nonEnumSimpleType">
+		<xsd:restriction base="xsd:int" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="enumSimpleTypeWithoutDescriptions">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="1" />
+			<xsd:enumeration value="2" />
+			<xsd:enumeration value="3" />
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="enumSimpleTypeWithDescriptions">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="1"><xsd:annotation>
+				<xsd:documentation>One</xsd:documentation>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="2" />
+			<xsd:enumeration value="3"><xsd:annotation>
+				<xsd:documentation>Three</xsd:documentation>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="extensionFromSimpleType">
+		<xsd:restriction base="test:enumSimpleTypeWithDescriptions" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="brokenExtensionFromSimpleType">
+		<xsd:restriction base="test:thisDoesntExist" />
+	</xsd:simpleType>
+	
+</xsd:schema>

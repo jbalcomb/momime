@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jaxb="https://jakarta.ee/xml/ns/jaxb" xmlns:nxe="http://www.ndg.com/xmleditor/1.0.0"
+	xmlns:map="http://www.ndg.com/map" targetNamespace="http://www.ndg.com/map"
+	jaxb:version="3.0">
+
+	<!-- Map coordinate spaces and rules for traversing between adjacent coordinates -->
+	 
+	<xsd:simpleType name="coordinateSystemType">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="S"><xsd:annotation>
+				<xsd:documentation>
+Square coordinate system
+Direction '1' is straight up, '2' is up-right, '3' is right and so in a clockwise fashion
+-------------------------------------
+| 0,0 | 1,0 | 2,0 | 3,0 | 4,0 |....
+-------------------------------------
+| 0,1 | 1,1 | 2,1 | 3,1 | 4,1 |....
+-------------------------------------
+| 0,2 | 1,2 | 2,2 | 3,2 | 4,2 |....
+-------------------------------------
+   ...     ...     ...     ...     ...    ...
+   				</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SQUARE"/></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			
+			<xsd:enumeration value="H"><xsd:annotation>
+				<xsd:documentation>
+Hex coordinate system
+Direction '1' is straight up, '2' is up-right, '3' is down-right and so in a clockwise fashion
+ ___     ___       ___
+/0,0\__/2,0\___/4,0\  ...
+\___/1,0\_ /3,0\___/
+/0,1 \__/2,1\__/4,1\  ...
+\___/1,1\_ /3,1\___/
+/0,2 \__/2,2\__/4,2\  ...
+\___/1,2\_ /3,2\___/
+      \___/  \___/
+ ...    ...  ...  ...   ...   ...
+				</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="HEX"/></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			
+			<xsd:enumeration value="V"><xsd:annotation>
+				<xsd:documentation>
+Vertical hex coordinate system
+Direction '1' is up-right, '2' is right, '3' is down-right, '4' is down-left, '5' is left, '6' is up-left
+ /  \  /  \ /  \  /  \ 
+|0,0|1,0|2,0|3,0|
+ \  /  \  / \  /  \  / 
+  |0,1 |1,1 |2,1|
+ /  \  /  \ /  \  /  \
+|0,2|1,2|2,2|3,2|
+ \  /  \  / \  /  \  / 
+ ...    ...  ...  ...   ...   ...
+				</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="VERTICAL_HEX"/></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			
+			<xsd:enumeration value="D"><xsd:annotation>
+				<xsd:documentation>
+Diamond coordinate system
+Although this is basically a square coordinate system tilted by 45 degrees, Direction '1' is still straight up, '2' is up-right, '3' is right and so in a clockwise fashion
+Diamond maps don't support wrapping
+  / \   / \    / \   / \    / \
+/0,0\/1,0\/2,0\/3,0\/4,0\      ...
+\    /\     /\    /\     /\    / \
+  \/0,1\/1,1\/2,1\/3,1\/4,1\   ...
+  / \   / \    / \   / \    / \   /
+/0,2\/1,2\/2,2\/3,2\/4,2\/    ...
+\    /\     /\    /\     /\    / \
+  \/0,3\/1,3\/2,3\/3,3\/4,3\   ...
+  / \   / \    / \   / \    / \   /
+/0,4\/1,4\/2,4\/3,4\/4,4\/    ...
+\    /\     /\    /\     /\    /
+  \/    \ /    \/    \ /    \/
+
+  ...    ...   ...    ...    ...        ...
+				</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="DIAMOND"/></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			
+			<xsd:enumeration value="W"><xsd:annotation>
+				<xsd:documentation>
+Wrapped diamond coordinate system
+Looks the same as regular diamond coordinate system, but the tiles are numbered differently
+To use this, its mandatory that "wraps left to right" is turned on, and "wraps top to bottom" can optionally be on
+  / \   / \    / \   / \    / \
+/0,0\/1,0\/2,0\/3,0\/4,0\      ...
+\    /\     /\    /\     /\    / \
+  \/0,1\/1,1\/2,1\/3,1\/4,1\   ...
+  / \   / \    / \   / \    / \   /
+/9,2\/0,2\/1,2\/2,2\/3,2\/    ...
+\    /\     /\    /\     /\    / \
+  \/9,3\/0,3\/1,3\/2,3\/3,3\   ...
+  / \   / \    / \   / \    / \   /
+/8,4\/9,4\/0,4\/1,4\/2,4\/    ...
+\    /\     /\    /\     /\    /
+  \/    \ /    \/    \ /    \/
+
+  ...    ...   ...    ...    ...        ...
+				</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="WRAPPED_DIAMOND"/></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:complexType name="mapCoordinates2D">
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="x" type="map:mapDimension"/>
+			<xsd:element minOccurs="1" maxOccurs="1" name="y" type="map:mapDimension"/>
+        </xsd:sequence>
+	</xsd:complexType>
+	
+	<xsd:complexType name="mapCoordinates3D">
+		<xsd:complexContent>
+			<xsd:extension base="map:mapCoordinates2D">
+		        <xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="z" type="map:mapDimension"/>
+        		</xsd:sequence>
+        	</xsd:extension>
+        </xsd:complexContent>
+	</xsd:complexType>
+	
+	<xsd:complexType name="coordinateSystem">
+        <xsd:annotation>
+        	<xsd:documentation>Defines a coordinate space with boundaries and the rules for traversing from one cell to adjacent cells.</xsd:documentation>
+        </xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="coordinateSystemType" type="map:coordinateSystemType" nxe:label="Coordinate system type" nxe:showmaincolumn="false" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="width" type="map:mapDimension" nxe:label="Width" nxe:gridwidth="60" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="height" type="map:mapDimension" nxe:label="Height" nxe:gridwidth="60" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="depth" type="map:mapDimension" nxe:label="Depth" nxe:gridwidth="60">
+			    <xsd:annotation>
+    				<xsd:documentation>Ignored when dealing with 2D maps.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="1" maxOccurs="1" name="wrapsLeftToRight" type="xsd:boolean" nxe:label="Wraps Left-Right?" nxe:gridwidth="120" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="wrapsTopToBottom" type="xsd:boolean" nxe:label="Wraps Top-Bottom?" nxe:gridwidth="120" />
+		</xsd:sequence>
+	</xsd:complexType>
+	
+	<xsd:simpleType name="mapDimension">
+		<xsd:restriction base="xsd:unsignedShort" />
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="mapDirection">
+	    <xsd:annotation>
+    		<xsd:documentation>Map direction 1..8, 1 being north, 2 being north-east and so on.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort">
+			<xsd:minInclusive value="1"/>
+			<xsd:maxInclusive value="8"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+</xsd:schema>

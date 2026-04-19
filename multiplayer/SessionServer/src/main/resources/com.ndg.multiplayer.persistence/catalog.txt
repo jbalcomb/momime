@@ -1,0 +1,1 @@
+PUBLIC "http://www.ndg.com/multiplayer/persistence" "MultiplayerSessionPersistence.xsd"

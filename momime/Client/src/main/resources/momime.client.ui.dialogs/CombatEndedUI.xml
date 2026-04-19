@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns2:xmlLayoutContainer xmlns:ns2="http://ndg.com/utils/swing/layoutmanagers/xmllayout">
+	<formWidth>206</formWidth>
+	<formHeight>235</formHeight>
+	<component name="frmCombatEndedBottomScroll">
+		<left>0</left>
+		<top>187</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatEndedHeadingLine1">
+		<left>106</left>
+		<top>26</top>
+		<horizontalAlignment>0.5</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatEndedHeadingLine2">
+		<left>106</left>
+		<top>36</top>
+		<horizontalAlignment>0.5</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatEndedText">
+		<left>15</left>
+		<top>103</top>
+		<width>184</width>
+		<height>83</height>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatEndedClose">
+		<left>141</left>
+		<top>210</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+</ns2:xmlLayoutContainer>

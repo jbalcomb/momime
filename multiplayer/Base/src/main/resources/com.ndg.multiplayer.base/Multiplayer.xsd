@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mp="http://www.ndg.com/multiplayer/base" targetNamespace="http://www.ndg.com/multiplayer/base">
+
+	<!-- This project contains data types and code common to both client and server side at the base level.
+	
+			It contains only the code for serializing Java objects based on these data types into XML, and deserializaing XML back into Java objects.
+	
+			It has no knowledge of the types of message that a specific application will use - including that it has no pre-defined messages for
+			maintaining session and client information and state, and so clients are independant from each other and have no knowledge of each other. -->
+    
+	<xsd:complexType name="clientToServerMessage">
+		<xsd:annotation>
+			<xsd:documentation>Supertype from which all application client-to-server messages should inherit from</xsd:documentation>
+		</xsd:annotation>
+	</xsd:complexType>
+	
+	<xsd:complexType name="serverToClientMessage">
+		<xsd:annotation>
+			<xsd:documentation>Supertype from which all application server-to-client messages should inherit from</xsd:documentation>
+		</xsd:annotation>
+	</xsd:complexType>
+
+</xsd:schema>

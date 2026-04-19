@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:nxe="http://www.ndg.com/xmleditor/1.0.0"
+	xmlns:test="http://www.ndg.com/xmleditor/test" targetNamespace="http://www.ndg.com/xmleditor/test">
+
+	<!-- Example of XSD with the 'backup on open' flag set, and some database info -->
+
+    <xsd:annotation>
+		<xsd:appinfo>
+			<nxe:backuponopen>Y</nxe:backuponopen>
+			<nxe:database namespaceURI="http://www.ndg.com/xmleditor/test">
+				<nxe:title>Unit Test</nxe:title>
+				<nxe:xmlfilename type="relative">..\Unit Test.xml</nxe:xmlfilename>
+			</nxe:database>
+		</xsd:appinfo>
+    </xsd:annotation>
+
+	<!-- Also example of XSD with some complex types, but no main element -->
+
+	<xsd:complexType name="mainType">
+		<xsd:sequence>
+		</xsd:sequence>
+	</xsd:complexType>
+
+</xsd:schema>

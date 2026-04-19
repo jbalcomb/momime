@@ -1,0 +1,73 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>ndgmultiplayer-sessionbase</artifactId>
+	<name>ndgMultiplayerSessionBase</name>
+	<description>Multiplayer engine - session base (maintainin session and client information and state)</description>
+
+	<parent>
+		<groupId>com.ndg.multiplayer</groupId>
+		<artifactId>ndgmultiplayer-parent</artifactId>
+		<version>0.8.0</version>
+	</parent>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>com.evolvedbinary.maven.jvnet</groupId>
+				<artifactId>jaxb30-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>main-xjc-generate</id>
+						<phase>generate-sources</phase>
+						<goals><goal>generate</goal></goals>
+						<configuration>
+							<schemaDirectory>src/main/resources/com.ndg.multiplayer.sessionbase</schemaDirectory>
+							<generateDirectory>target/generated-sources/xjc-multiplayer-sessionbase</generateDirectory>
+							<episodeFile>target/generated-sources/xjc-multiplayer-sessionbase/META-INF/multiplayer-sessionbase.episode</episodeFile>
+							<extension>true</extension>
+							<bindings>
+								<binding>
+									<dependencyResource>
+										<groupId>com.ndg.multiplayer</groupId>
+										<artifactId>ndgmultiplayer-base</artifactId>
+										<resource>META-INF/multiplayer-base.episode</resource>
+									</dependencyResource>
+								</binding>
+							</bindings>    
+							<catalogs>
+								<catalog>
+									<dependencyResource>
+										<groupId>com.ndg.multiplayer</groupId>
+										<artifactId>ndgmultiplayer-base</artifactId>
+										<resource>com.ndg.multiplayer.base/catalog.txt</resource>
+									</dependencyResource>
+								</catalog>
+							</catalogs>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.ndg.multiplayer</groupId>
+			<artifactId>ndgmultiplayer-base</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+		</dependency>
+	</dependencies>
+
+</project>

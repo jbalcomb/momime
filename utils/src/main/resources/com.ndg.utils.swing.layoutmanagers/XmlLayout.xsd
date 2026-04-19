@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:xmllayout="http://ndg.com/utils/swing/layoutmanagers/xmllayout" targetNamespace="http://ndg.com/utils/swing/layoutmanagers/xmllayout">
+
+	<xsd:annotation>
+		<xsd:documentation>Stores positions, and optionally sizes and alignments, for all the components within a container.  Used by XmlLayoutManager.
+		
+Generally you'll only specify a name, left and top for each component.  If width and height are omitted then the component's preferredSize will be used,
+which is preferred since it allows for components to resize themselves according to e.g. how much text they have to display, or the font being used.
+Specifying a width and height here will forcibly override the component's preferredSize.
+
+Component names in the XML must be unique.  Having multiple components at runtime with the same name is allowed,
+if you want two components to take up the same space in the container and then hide/show them on the fly.
+
+Having components listed in the XML that aren't created at runtime is fine, this allows for doing things like names label.1, label.2 ... label.10
+to define all the positions, and then the number of labels actually created at runtime can then vary no problem.  Doing the opposite,
+adding a component that isn't listed in the XML, will result in the component staying at 0, 0 and a warning in the log.
+
+Alignments if specified are used in calculating positions to place components at.  They aren't stored against the alignmentX/Y values of the component.
+
+Also note the positions and sizes defined here know nothing about what type/class each component is.</xsd:documentation>
+	</xsd:annotation>
+
+	<!-- Stores positions, and optionally sizes and alignments, for all the components within a container. Used by XmlLayoutManager. -->
+
+	<xsd:complexType name="xmlLayoutComponent">
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="left" type="xsd:int" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="top" type="xsd:int" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="width" type="xsd:int" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="height" type="xsd:int" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="horizontalAlignment" type="xsd:float" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="verticalAlignment" type="xsd:float" />
+		</xsd:sequence>
+		<xsd:attribute name="name" type="xsd:normalizedString" use="required" />
+	</xsd:complexType>
+
+	<xsd:element name="xmlLayoutContainer">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element minOccurs="1" maxOccurs="1" name="formWidth" type="xsd:int" />
+				<xsd:element minOccurs="1" maxOccurs="1" name="formHeight" type="xsd:int" />
+				<xsd:element minOccurs="0" maxOccurs="unbounded" name="component" type="xmllayout:xmlLayoutComponent" />
+			</xsd:sequence>
+		</xsd:complexType>
+		
+		<xsd:key name="xmlLayoutComponentPK">
+			<xsd:selector xpath="component" />
+			<xsd:field xpath="@name" />
+		</xsd:key>
+	</xsd:element>
+
+</xsd:schema>

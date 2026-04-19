@@ -1,0 +1,130 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>momime-editors</artifactId>
+	<name>momimeEditors</name>
+	<description>MoM IME Editors</description>
+
+	<parent>
+		<groupId>com.ndg.momime</groupId>
+		<artifactId>momime-parent</artifactId>
+		<version>1.7.0</version>
+	</parent>
+
+	<build>
+		<plugins>
+			<!-- This outputs the classpath into a file, so that it can be read in by .bat script -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>build-classpath-windows</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>build-classpath</goal>
+						</goals>
+						<configuration>
+							<outputFile>target/editors-classpath-windows.txt</outputFile>
+							<prefix>..\lib</prefix>
+							<pathSeparator>;</pathSeparator>
+							<fileSeparator>\</fileSeparator>
+							<includeScope>runtime</includeScope>
+						</configuration>
+					</execution>
+					<execution>
+						<id>build-classpath-unix</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>build-classpath</goal>
+						</goals>
+						<configuration>
+							<outputFile>target/editors-classpath-unix.txt</outputFile>
+							<prefix>../lib</prefix>
+							<pathSeparator>:</pathSeparator>
+							<fileSeparator>/</fileSeparator>
+							<includeScope>runtime</includeScope>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Zip the classpath, so the assembly project can unpack it -->
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<descriptors>
+								<descriptor>assembly-classpath.xml</descriptor>
+								<descriptor>assembly-config.xml</descriptor>
+							</descriptors>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+		
+		<pluginManagement>
+			<plugins>
+				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-dependency-plugin</artifactId>
+										<versionRange>[2.1,)</versionRange>
+										<goals>
+											<goal>build-classpath</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.ndg.common</groupId>
+			<artifactId>xmleditor</artifactId>
+			<version>${mom.xmleditor.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.ndg.momime</groupId>
+			<artifactId>momime-server</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.ndg.momime</groupId>
+			<artifactId>momime-client</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+		</dependency>
+		
+		<!-- Although we don't display .LBX and .NDGARC images in the graphics editor anymore, this is still needed to allow the LBX imports of building/spell/unit names-->
+		<dependency>
+			<groupId>com.ndg.momime</groupId>
+			<artifactId>momime-utils</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+	</dependencies>
+</project>

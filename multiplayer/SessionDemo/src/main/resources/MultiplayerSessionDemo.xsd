@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mp="http://www.ndg.com/multiplayer/base" xmlns:mps="http://www.ndg.com/multiplayer/sessionbase" xmlns:mpd="http://www.ndg.com/multiplayer/demo" targetNamespace="http://www.ndg.com/multiplayer/demo">
+
+	<!-- This project contains data types and code to add session and client information and state to the base messaging layer.
+
+			It contains structures describing each session and client, and messages allowing clients to list sessions to join, create sessions,
+			and be kept updated as other clients join or leave their session.
+			
+			Specific applications are expected to subtype the session and player descriptions to add their own data as necessary. -->
+
+	<xsd:import namespace="http://www.ndg.com/multiplayer/base"/>
+	<xsd:import namespace="http://www.ndg.com/multiplayer/sessionbase"/>
+
+	<!-- Descriptions -->
+
+	<xsd:complexType name="demoSessionDescription">
+		<xsd:complexContent>
+			<xsd:extension base="mps:sessionDescription">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="mapWidth" type="xsd:int" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="mapHeight" type="xsd:int" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="demoPlayerDescription">
+		<xsd:complexContent>
+			<xsd:extension base="mps:playerDescription">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="isFemale" type="xsd:boolean" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<!-- Varying structures -->
+
+	<xsd:complexType name="demoGeneralServerKnowledge">
+		<xsd:complexContent>
+			<xsd:extension base="mps:generalServerKnowledge">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="operatingSystem" type="xsd:normalizedString" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="demoGeneralPublicKnowledge">
+		<xsd:complexContent>
+			<xsd:extension base="mps:generalPublicKnowledge">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="weatherToday" type="xsd:normalizedString" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="demoPersistentPlayerPrivateKnowledge">
+		<xsd:complexContent>
+			<xsd:extension base="mps:persistentPlayerPrivateKnowledge">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="favouriteColour" type="xsd:normalizedString" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="demoPersistentPlayerPublicKnowledge">
+		<xsd:complexContent>
+			<xsd:extension base="mps:persistentPlayerPublicKnowledge">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="age" type="xsd:int" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="demoTransientPlayerPrivateKnowledge">
+		<xsd:complexContent>
+			<xsd:extension base="mps:transientPlayerPrivateKnowledge">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="movesRemainingThisTurn" type="xsd:int" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="demoTransientPlayerPublicKnowledge">
+		<xsd:complexContent>
+			<xsd:extension base="mps:transientPlayerPublicKnowledge">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="finishedTurn" type="xsd:boolean" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<!-- Messages -->
+
+	<xsd:element name="ctosChat">
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="chat" type="xsd:normalizedString" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="stocChat">
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="chat" type="xsd:normalizedString" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="senderPlayerID" type="mps:playerID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="requestUpdateHumanPlayerToAI">
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+</xsd:schema>

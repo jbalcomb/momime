@@ -1,0 +1,86 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>ndgmultiplayer-base</artifactId>
+	<name>ndgMultiplayerBase</name>
+	<description>Multiplayer engine - base (clients are independant with no knowledge of each other)</description>
+
+	<parent>
+		<groupId>com.ndg.multiplayer</groupId>
+		<artifactId>ndgmultiplayer-parent</artifactId>
+		<version>0.8.0</version>
+	</parent>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>com.evolvedbinary.maven.jvnet</groupId>
+				<artifactId>jaxb30-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>main-xjc-generate</id>
+						<phase>generate-sources</phase>
+						<goals><goal>generate</goal></goals>
+						<configuration>
+							<schemaDirectory>src/main/resources/com.ndg.multiplayer.base</schemaDirectory>
+							<generateDirectory>target/generated-sources/xjc-multiplayer-base</generateDirectory>
+							<episodeFile>target/generated-sources/xjc-multiplayer-base/META-INF/multiplayer-base.episode</episodeFile>
+						</configuration>
+					</execution>
+					<execution>
+						<id>test-xjc-generate</id>
+						<phase>generate-test-sources</phase>
+						<goals><goal>generate</goal></goals>
+						<configuration>
+							<schemaDirectory>src/test/resources</schemaDirectory>
+							<generateDirectory>target/generated-sources/xjc-test</generateDirectory>
+							<addCompileSourceRoot>false</addCompileSourceRoot>
+							<addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+							<extension>true</extension>
+							<bindings>                                                               
+								<binding>
+									<fileset>
+										<directory>${project.build.directory}/generated-sources/xjc-multiplayer-base/META-INF</directory>
+										<includes><include>*.episode</include></includes>
+									</fileset>
+								</binding>
+							</bindings>    
+							<catalogs>
+								<catalog>
+									<fileset>
+										<directory>${project.basedir}/src/main/resources/com.ndg.multiplayer.base</directory>
+										<includes><include>catalog.txt</include></includes>
+									</fileset>
+								</catalog>
+							</catalogs>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.ndg.common</groupId>
+			<artifactId>ndgutils</artifactId>
+			<version>${multiplayer.ndgutils.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+		</dependency>
+	</dependencies>
+
+</project>

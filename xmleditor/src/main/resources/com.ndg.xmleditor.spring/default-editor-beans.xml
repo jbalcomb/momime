@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd" >
+
+	<!-- This is a template for XML editor implementations to create their Spring files from, i.e. take a copy of this default file and modify it as appropraite -->
+
+	<import resource="../com.ndg.xmleditor.spring/common-editor-beans.xml"/>
+
+	<!-- XML (schemaFactory must remain here since implementation may or may not need to set a resourceResolver property on this) -->
+
+	<bean id="schemaFactory" class="javax.xml.validation.SchemaFactory" factory-method="newInstance">
+		<constructor-arg value="http://www.w3.org/2001/XMLSchema" />
+	</bean>	
+
+	<!-- Application specific -->
+
+	<bean id="dispatcher" class="com.ndg.xmleditor.editor.XmlEditorDispatcher">
+		<property name="creator" ref="creator" />
+		<property name="gridBeansMap">
+			<map>
+				<entry key="default" value="grid" />
+			</map>
+		</property>
+		<property name="recordPanelBeansMap">
+			<map>
+				<entry key="default" value="panel" />
+			</map>
+		</property>
+		<property name="editRecordBeansMap">
+			<map>
+				<entry key="default" value="edit" />
+			</map>
+		</property>
+		<property name="dataTypesMap">
+			<map>
+				<entry key="boolean" value="booleanField" />
+				<entry key="string" value="textArea" />		<!-- xsd:string assumed to be multi-line; xsd:normalizedString assumed to be single-line -->
+				<entry key="default" value="textField" />
+			</map>
+		</property>
+	</bean>
+
+	<!-- General editor -->
+	
+	<bean id="ask" class="com.ndg.xmleditor.editor.AskForXsdAndXmlFileLocations" init-method="init">
+		<property name="utils" ref="utils" />
+		<property name="dispatcher" ref="dispatcher" />
+		<property name="parser" ref="parser" />
+		<property name="schemaFactory" ref="schemaFactory" />
+		<property name="mdiEditor" ref="mdiEditor" />
+		<property name="xsdUnmarshaller" ref="xsdUnmarshaller" />
+		
+		<property name="loadXsdFromClasspath" value="true" />
+		<property name="xsdFilename" value="/DataModel.xsd" />
+	</bean>
+	
+	<bean id="mdiEditor" class="com.ndg.xmleditor.editor.XmlEditorMain">
+		<property name="dispatcher" ref="dispatcher" />
+	</bean>
+	
+</beans>

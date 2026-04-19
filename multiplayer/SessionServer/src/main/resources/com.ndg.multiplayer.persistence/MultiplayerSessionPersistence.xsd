@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mps="http://www.ndg.com/multiplayer/sessionbase"
+	xmlns:mpsg="http://www.ndg.com/multiplayer/persistence" targetNamespace="http://www.ndg.com/multiplayer/persistence">
+
+	<xsd:import namespace="http://www.ndg.com/multiplayer/sessionbase"/>
+
+	<!-- Defines structure for persisting all session information, i.e. saving and loading save game files -->
+
+	<xsd:complexType name="playerCombinedPersistentInfo">
+		<xsd:annotation>
+			<xsd:documentation>Combines all publicly known information blocks about a player.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="playerDescription" type="mps:playerDescription"/>
+			<xsd:element minOccurs="0" maxOccurs="1" name="persistentPlayerPublicKnowledge" type="mps:persistentPlayerPublicKnowledge"/>
+			<xsd:element minOccurs="0" maxOccurs="1" name="persistentPlayerPrivateKnowledge" type="mps:persistentPlayerPrivateKnowledge"/>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="savedGame">
+		<xsd:annotation>
+			<xsd:documentation>Stores all information about a session so it can be persisted into a save game file</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element minOccurs="1" maxOccurs="1" name="sessionDescription" type="mps:sessionDescription"/>
+				<xsd:element minOccurs="1" maxOccurs="1" name="savedAt" type="xsd:dateTime" />
+				<xsd:element minOccurs="0" maxOccurs="1" name="generalServerKnowledge" type="mps:generalServerKnowledge"/>
+				<xsd:element minOccurs="0" maxOccurs="1" name="generalPublicKnowledge" type="mps:generalPublicKnowledge"/>
+				<xsd:element minOccurs="0" maxOccurs="unbounded" name="player" type="mpsg:playerCombinedPersistentInfo"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	
+</xsd:schema>

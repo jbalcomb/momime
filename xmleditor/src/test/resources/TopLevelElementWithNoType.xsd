@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:test="http://www.ndg.com/xmleditor/test" targetNamespace="http://www.ndg.com/xmleditor/test">
+	
+	<!-- Example XSD where the top level element has no type info -->
+
+	<xsd:element name="mainElement" />
+
+</xsd:schema>

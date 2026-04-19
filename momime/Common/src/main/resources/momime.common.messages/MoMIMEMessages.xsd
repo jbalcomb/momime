@@ -1,0 +1,1746 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jaxb="https://jakarta.ee/xml/ns/jaxb"
+	xmlns:mp="http://www.ndg.com/multiplayer/base" xmlns:mps="http://www.ndg.com/multiplayer/sessionbase" xmlns:map="http://www.ndg.com/map"
+	xmlns:momimecommon="http://momime/common/database" xmlns:momimeclient="http://momime/client/database"
+	xmlns:momimemsgs="http://momime/common/messages" targetNamespace="http://momime/common/messages"
+	jaxb:version="3.0">
+
+	<xsd:import namespace="http://www.ndg.com/map" />
+	<xsd:import namespace="http://www.ndg.com/multiplayer/base" />
+	<xsd:import namespace="http://www.ndg.com/multiplayer/sessionbase" />
+	<xsd:import namespace="http://momime/common/database" />
+	<xsd:import namespace="http://momime/client/database" />
+    
+    <xsd:annotation>
+    	<xsd:documentation>Defines the portions of the messaging layer that are needed both by client-to-server and server-to-client messages.
+This includes the session description and all knowledge structures - i.e. any runtime data structures, since these aren't data types defined in the server XSD.'</xsd:documentation>
+	</xsd:annotation>
+
+<!-- Descriptions -->
+    
+	<xsd:complexType name="momSessionDescription">
+		<xsd:complexContent>
+			<xsd:extension base="mps:sessionDescription">
+		        <xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="xmlDatabaseName" type="xsd:normalizedString" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="aiPlayerCount" type="xsd:unsignedShort" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="turnSystem" type="momimemsgs:turnSystem" />
+					
+					<xsd:element minOccurs="1" maxOccurs="1" name="overlandMapSize" type="momimecommon:overlandMapSize" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="combatMapSize" type="momimemsgs:combatMapSize" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="landProportion" type="momimecommon:landProportion" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="nodeStrength" type="momimecommon:nodeStrength" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="difficultyLevel" type="momimecommon:difficultyLevel" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="fogOfWarSetting" type="momimecommon:fogOfWarSetting" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="unitSetting" type="momimecommon:unitSetting" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="spellSetting" type="momimecommon:spellSetting" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="heroItemSetting" type="momimecommon:heroItemSetting" />
+					
+					<!--  Special debug options -->
+
+					<xsd:element minOccurs="0" maxOccurs="1" name="disableFogOfWar" type="xsd:boolean" />					
+					<xsd:element minOccurs="0" maxOccurs="unbounded" name="modName" type="xsd:normalizedString" />
+		        </xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="combatMapSize">
+		<xsd:annotation>
+			<xsd:documentation>Details about the combat map coordinate system; all these are fixed for now.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="map:coordinateSystem">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="zoneWidth" type="map:mapDimension" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="zoneHeight" type="map:mapDimension" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+	
+<!-- Runtime knowledge structures -->
+
+	<xsd:complexType name="momResourceValue">
+	    <xsd:annotation>
+    		<xsd:documentation>Holds details about how much of one type of production a player has now + is generating each turn</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="productionTypeID" type="momimecommon:productionTypeID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="amountStored" type="momimecommon:undoubledProductionValue" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="amountPerTurn" type="momimecommon:undoubledProductionValue">
+			    <xsd:annotation>
+    				<xsd:documentation>This includes production from buildings, population, map features, consumption and maintenance spent on buildings and units.
+It doesn't include where one type of production is converted into another, such as selling 2 rations for 1 gold,
+or distributing magic power into mana, research and skill improvement.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="fogOfWarMemory">
+	    <xsd:annotation>
+    		<xsd:documentation>Structure which holds all the details a player remembers about the map and other items, or the true values on the server</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="map" type="momimemsgs:mapVolumeOfMemoryGridCells" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="unit" type="momimemsgs:memoryUnit" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="building" type="momimemsgs:memoryBuilding" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="combatAreaEffect" type="momimemsgs:memoryCombatAreaEffect" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="maintainedSpell" type="momimemsgs:memoryMaintainedSpell" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="wizardDetails" type="momimemsgs:knownWizardDetails">
+				<xsd:annotation><xsd:documentation>This is only "knownWizardDetails" in the server's true memory.  In each player's memory
+(on both server and client) it is "diplomacyWizardDetails" and needs to be typecast.</xsd:documentation></xsd:annotation>
+			</xsd:element>
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="spellResearchStatus">
+	    <xsd:annotation>
+    		<xsd:documentation>Records the research status of one spell in a player's spell book</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="remainingResearchCost" type="momimecommon:spellResearchCost" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="status" type="momimemsgs:spellResearchStatusID" />
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="numberedHeroItem">
+	    <xsd:annotation>
+    		<xsd:documentation>Hero items don't have a unique key in the database, but we need some way for the client and server to
+identify them to each other at runtime, e.g. client requests to move hero item no. 57 to the 3rd slot on Unit URN 123.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimecommon:heroItem">
+				<xsd:attribute name="heroItemURN" type="momimemsgs:heroItemURN" use="required" />
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="momPersistentPlayerPrivateKnowledge">
+	    <xsd:annotation>
+    		<xsd:documentation>Holds all private knowledge that a player only knows about themselves, they can't see the values for other players,
+    										and that is persisted into save game files.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="mps:persistentPlayerPrivateKnowledge">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="taxRateID" type="momimecommon:taxRateID" />
+					<xsd:element minOccurs="0" maxOccurs="unbounded" name="resourceValue" type="momimemsgs:momResourceValue" />
+
+					<xsd:element minOccurs="0" maxOccurs="1" name="spellIDBeingResearched" type="momimecommon:spellID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="magicPowerDistribution" type="momimemsgs:magicPowerDistribution" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="manaSpentOnCastingCurrentSpell" type="momimecommon:spellCastingCost" />
+					<xsd:element minOccurs="0" maxOccurs="unbounded" name="spellResearchStatus" type="momimemsgs:spellResearchStatus" />
+					<xsd:element minOccurs="0" maxOccurs="unbounded" name="queuedSpell" type="momimemsgs:queuedSpell">
+						<xsd:annotation>
+							<xsd:documentation>In simultaneous turns games, spells aren't cast until we hit end turn, but we still need the possibility of casting
+								multiple spells per turn if we have a high skill, so this list stores the spells we've got queued up.
+								In one-at-a-time games its only used if we're trying to cast an overland (i.e. non-combat) spell
+								that is taking us more than one turn to cast (instant spells are cast instantly!)</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="unbounded" name="unassignedHeroItem" type="momimemsgs:numberedHeroItem">
+						<xsd:annotation>
+							<xsd:documentation>Hero items that the player has just sitting in the bank, not being used by any hero at the moment</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="1" maxOccurs="1" name="fogOfWar" type="momimemsgs:mapVolumeOfFogOfWarStates" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="fogOfWarMemory" type="momimemsgs:fogOfWarMemory" />
+					<xsd:element minOccurs="0" maxOccurs="unbounded" name="pendingMovement" type="momimemsgs:pendingMovement" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="queuedSpell">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores details of one spell queued up to be cast overland</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="queuedSpellID" type="momimecommon:spellID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="heroItem" type="momimecommon:heroItem" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="variableDamage" type="momimecommon:unitSkillValue" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="newTurnMessageData">
+	    <xsd:annotation>
+    		<xsd:documentation>Class used to each new turn message from the server to the client</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="msgType" type="momimemsgs:newTurnMessageTypeID" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="newTurnMessagePopulationChange">
+	    <xsd:annotation>
+    		<xsd:documentation>NTM about the population of a city either growing or dying over a 1,000 boundary.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="cityLocation" type="map:mapCoordinates3D" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="cityName" type="momimecommon:description">
+					    <xsd:annotation>
+				    		<xsd:documentation>Client may not be able to look this up themselves if the message is about an Outpost being abandoned.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="1" maxOccurs="1" name="oldPopulation" type="momimecommon:cityPopulation" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="newPopulation" type="momimecommon:cityPopulation" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageConstructUnit">
+	    <xsd:annotation>
+    		<xsd:documentation>NTM describing a unit that completed construction.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="cityLocation" type="map:mapCoordinates3D" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="unitID" type="momimecommon:unitID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="unitAddBumpType" type="momimemsgs:unitAddBumpTypeID" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageSummonUnit">
+	    <xsd:annotation>
+    		<xsd:documentation>NTM describing a unit that was added from a summoning spell.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageConstructUnit">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="unitURN" type="momimemsgs:unitURN">
+					    <xsd:annotation>
+    						<xsd:documentation>Its possible for this to be omitted if bumpType = No Room because the city and every adjacent tile was full,
+    							i.e. we completed casting the spell but failed to actually summon the unit.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageCreateArtifact">
+	    <xsd:annotation>
+    		<xsd:documentation>NTM describing an item that we've finished crafting.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="heroItemName" type="momimecommon:description" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageConstructBuilding">
+	    <xsd:annotation>
+    		<xsd:documentation>NTM describing a building that completed construction, or that we aborted trying to construct.
+    			Being forced to abort a construction can happen a number of ways.  We might be constructing a Sawmill and the last Forest tile gets corrupted.
+    			A building that is a pre-requisite of what we are constructing might get destroyed in a battle or by an overland spell.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="cityLocation" type="map:mapCoordinates3D" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="buildingID" type="momimecommon:buildingID" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageDestroyBuilding">
+	    <xsd:annotation>
+    		<xsd:documentation>NTM describing a building that was destroyed by a spell.
+If construction gets changed as a result, that gets sent as abort building/unit separately.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="cityLocation" type="map:mapCoordinates3D" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="buildingID" type="momimecommon:buildingID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="destroyedBySpellID" type="momimecommon:spellID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="castingPlayerID" type="mps:playerID" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageNode">
+	    <xsd:annotation>
+    		<xsd:documentation>NTM about a node that we captured or lost.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="nodeLocation" type="map:mapCoordinates3D" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="unitID" type="momimecommon:unitID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="otherUnitID" type="momimecommon:unitID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="otherPlayerID" type="mps:playerID">
+						<xsd:annotation>
+							<xsd:documentation>If capturing a node for the first time, we aren't capturing it from another player, so otherPlayerID will be null.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageKilledFromLackOfProduction">
+	    <xsd:annotation>
+    		<xsd:documentation>NTM about us losing something because we didn't have enough production to pay for it/maintain it.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="productionTypeID" type="momimecommon:productionTypeID" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageUnitKilledFromLackOfProduction">
+	    <xsd:annotation>
+    		<xsd:documentation>A unit was killed off because we couldn't afford the rations, gold and/or mana to pay for it.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageKilledFromLackOfProduction">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="unitURN" type="momimemsgs:unitURN" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageBuildingSoldFromLackOfProduction">
+	    <xsd:annotation>
+    		<xsd:documentation>A building was sold off because we couldn't afford the gold to maintain it.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageKilledFromLackOfProduction">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="cityLocation" type="map:mapCoordinates3D" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="buildingID" type="momimecommon:buildingID" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageSpellSwitchedOffFromLackOfProduction">
+	    <xsd:annotation>
+    		<xsd:documentation>A spell was switched off because we couldn't afford the mana to maintain it.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageKilledFromLackOfProduction">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageSpell">
+	    <xsd:annotation>
+    		<xsd:documentation>NTM about a spell, either one we've researched or need to pick a target for.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageSpellBlast">
+	    <xsd:annotation>
+    		<xsd:documentation>NTM about a spell we were casting overland getting blasted / fizzling due to an enemy wizard spell.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="blastedBySpellID" type="momimecommon:spellID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="blastedByPlayerID" type="mps:playerID" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageHeroGainedALevel">
+	    <xsd:annotation>
+    		<xsd:documentation>A hero gained a level.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="unitURN" type="momimemsgs:unitURN" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>		       
+
+	<xsd:complexType name="newTurnMessageOffer">
+	    <xsd:annotation>
+    		<xsd:documentation>Offer to hire someone or buy something.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageData">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="offerURN" type="momimemsgs:offerURN" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="cost" type="momimecommon:productionCost" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="offerForPlayerID" type="mps:playerID" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="newTurnMessageOfferHero">
+	    <xsd:annotation>
+    		<xsd:documentation>Offer to hire a hero.  The hero stats get generated on the server, but until they're actually bought, they don't
+exist in the client's unit list (at least not with the correct details) so we have to include the full unit details here.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageOffer">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="hero" type="momimemsgs:memoryUnit" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+			       
+	<xsd:complexType name="newTurnMessageOfferUnits">
+	    <xsd:annotation>
+    		<xsd:documentation>Offer to hire mercenary unit(s).</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageOffer">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="unitID" type="momimecommon:unitID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="unitCount" type="momimecommon:unitCount" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="levelNumber" type="momimecommon:experienceLevelNumber" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+			       
+	<xsd:complexType name="newTurnMessageOfferItem">
+	    <xsd:annotation>
+    		<xsd:documentation>Offer to buy a hero item.  Similar to heroes - we don't actually have the item yet so cannot look it up in our list,
+so must include the full details of the item here.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:newTurnMessageOffer">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="heroItem" type="momimemsgs:numberedHeroItem" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+			       
+	<xsd:complexType name="momTransientPlayerPrivateKnowledge">
+	    <xsd:annotation>
+    		<xsd:documentation>Holds all private knowledge that a player only knows about themselves, they can't see the values for other players,
+    										but that is not persisted into save game files.  i.e. this is typically info we use during one turn and then discard.
+    										Much of this is only actually used on the client - there is e.g. no point storing a player-specific list of pending
+    										movement, or a player-specific list of scheduled combats, since there's nothing private about the server's
+    										true list for these, so those will always be used instead.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="mps:transientPlayerPrivateKnowledge">
+		        <xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="overlandCastingSkillRemainingThisTurn" type="momimecommon:spellCastingCost" />
+					<xsd:element minOccurs="0" maxOccurs="unbounded" name="newTurnMessage" type="momimemsgs:newTurnMessageData">
+					    <xsd:annotation>
+    						<xsd:documentation>The use of this list store is slightly different on the client and server.  The server uses it as a storage area to
+    							generate NTMs before they are sent to the client, so that multiple NTMs can be generated and the complete list sent in one go, typically
+    							at the start of the player's turn, but new NTMs can also be generated and sent during our own turn
+    							(e.g. instant casting a spell that needs a target chosen) or during other players' turns (e.g. they captured one of our a nodes).
+    							As soon as NTMs in this list are sent on to the client, the server then scrubs its copy of the list clean.
+    							
+	    						On the client, messages received from the server are added as-is to here, and rules around expiring old messages
+    							(i.e. messages from previous turns) are applied to here.  This list is still unsorted with no category headings.  For purposes of actually
+    							displaying the NTMs to the player, the client then copies and sorts this list and adds category headings - that visual list is stored in the
+    							DefaultListModel used by the list of the NTM frame in the UI.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+
+					<!-- These are only needed on the server during game startup - maybe worth creating a server side-only player knowledge structure in future -->
+		        	<xsd:element minOccurs="0" maxOccurs="1" name="firstCityRaceID" type="momimecommon:raceID" />
+		        	<xsd:element minOccurs="0" maxOccurs="1" name="customPicksChosen" type="xsd:boolean" />
+		        </xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="playerPick">
+	    <xsd:annotation>
+    		<xsd:documentation>One pick (spell book or retort) and how many of them the player has.</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="pickID" type="momimecommon:pickID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="originalQuantity" type="momimecommon:pickQuantity" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="quantity" type="momimecommon:pickQuantity" />
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="knownWizardDetails">
+	    <xsd:annotation>
+    		<xsd:documentation>Holds all knowledge about a player that is only learned after you "meet" them.  The server has a simple list of this data for each player.</xsd:documentation>    		
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="playerID" type="mps:playerID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="wizardID" type="momimecommon:wizardID">
+			    <xsd:annotation>
+  						<xsd:documentation>RAIDERS and MONSTERS are special values; other values indicate pre-defined wizards; null represents a custom wizard.
+A player who has not yet chosen which wizard to be will not have a knownWizardDetails record.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="standardPhotoID" type="momimecommon:wizardID">
+			    <xsd:annotation>
+  						<xsd:documentation>For pre-defined wizards or custom wizards choosing a standard photo, indicates the wizard ID of the photo;
+for RAIDERS, MONSTERS and custom wizards uploading a custom photo, will be null.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="customPhoto" type="xsd:base64Binary">
+			    <xsd:annotation>
+					<xsd:documentation>Custom 218x250 photo encoded in any image format supported by Java, e.g. JPG or PNG;
+for RAIDERS, MONSTERS and custom wizards uploading a standard photo, will be null.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="customFlagColour" type="momimecommon:colour">
+			    <xsd:annotation>
+					<xsd:documentation>Only filled in if player chose a custom photo, otherwise their flag colour is derived from standardPhotoID; whichever of the two is
+used, the resulting value is written into momTransientPlayerPublicKnowledge so that we don't keep having to look up the flag colour of
+standardPhotoIDs over and over again</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="1" maxOccurs="1" name="wizardState" type="momimemsgs:wizardState" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="wizardPersonalityID" type="momimecommon:wizardPersonalityID">
+			    <xsd:annotation>
+					<xsd:documentation>Only filled in for AI wizards (not human wizards, raiders or rampaging monsters).</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="wizardObjectiveID" type="momimecommon:wizardObjectiveID">
+			    <xsd:annotation>
+					<xsd:documentation>Only filled in for AI wizards (not human wizards, raiders or rampaging monsters).</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="1" maxOccurs="1" name="everStartedCastingSpellOfMastery" type="xsd:boolean" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="pick" type="momimemsgs:playerPick" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="powerBaseHistory" type="momimecommon:undoubledProductionValue" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="pact" type="momimemsgs:pact" />
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="pact">
+	    <xsd:annotation>
+    		<xsd:documentation>Pact or status between the wizard whose knownWizardDetails object this is in, and the playerID listed here.
+If two wizards don't have a pact listed, they're at default state (neither at war or agreed pact).
+
+Pacts are public knowledge (wizard A will know of the pact state between wizards B and C) however we don't just freely make this
+part of GeneralPublicKnowledge as then we'd be sending playerIDs around for wizards that might not yet be known.  i.e. wizard A
+only gets sent the pact state between wizards B and C after wizard A has met both of them.</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="pactWithPlayerID" type="mps:playerID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="pactType" type="momimemsgs:pactType" />
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="diplomacyWizardDetails">
+	    <xsd:annotation>
+	    	<xsd:documentation>Holds details that one wizard knows about another wizard after they mave "met" them.   		
+Each player has a list of these that initially only contain themselves, raiders and rampaging monsters.  Raiders and rampaging
+monsters automatically know everybody from the start of the game.  Each a wizards "meets" a new wizard (or an unknown wizard
+announces themselves to the world by casting an overland enchantment or banishing/being banished) they will be added to the list.
+
+A player gets their own wizard record created when they choose which wizard they want to be (or custom).
+Updates made (like choosing or gaining picks, or power history values) get written to the one place on the server and then copied to each player's PPK who knows
+that wizard (including themselves).
+
+All diplomacy relation values hold OUR opinion of THEM, since a player only really knows how they feel about other players.  The only time we learn how another
+player feels about US is when we're in the diplomacy screen and see the colour of the gargoyle eyes - in this case the server sends the value as part of the
+message to open the DiplomacyUI and it exists only for the duration of that screen being open.
+
+The values are meaningless for human players, as the way they feel about all other players (both human and AI) is entirely up to them.  When a human
+player initiates diplomacy with another human player, a popup asks them what colour the eyes should be shown.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:knownWizardDetails">
+		        <xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="baseRelation" type="momimecommon:relationValue">
+					    <xsd:annotation>
+	  						<xsd:documentation>Base relation (wiki calls this startingRelation).  This represents natural trust/distrust about another wizard,
+based on the spell books of two wizards.  This is calculated when the two wizards initially meet, and never changes thereafter.
+Because it is based on spell books, the value will be symmetric, so wizard A's base opinion of wizard B will be the same as wizard B's base opinion of wizard A.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="1" maxOccurs="1" name="visibleRelation" type="momimecommon:relationValue">
+					    <xsd:annotation>
+	  						<xsd:documentation>This starts off being set the same as baseRelation, and each turn visibleRelation
+will move a little towards the original startingRelation value, but is also modified by many actions the enemy wizard takes in the game, see file "Diplomacy relation factors.txt"</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="1" maxOccurs="1" name="maximumGoldTribute" type="momimecommon:undoubledProductionValue">
+					    <xsd:annotation>
+	  						<xsd:documentation>This starts off at 150, and 4 possible tribute values are 25%, 50%, 75% and 100% of this.
+Each time we give a tribute, the amount we have to pay to gain the same benefit increases.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="1" maxOccurs="1" name="impatienceLevel" type="momimemsgs:impatienceLevel">
+					    <xsd:annotation>
+	  						<xsd:documentation>Starts at 0.  Every time a wizard makes a diplomatic request to us, adds +1.
+Tributes are excluded, we will always accept free gifts!  Reduced by -1 each turn so we gain a little more patience to talk to them again each turn.
+What the actual cap is depends on visibleRelation - a wizard we hate gets 1 chance at a request; a wizard we love will get 5.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="1" maxOccurs="1" name="lastTurnTalkedTo" type="momimecommon:turnNumber">
+					    <xsd:annotation>
+	  						<xsd:documentation>The last turn we talked to this wizard (or tried to - them immediately rejecting and refusing to talk to us still updates this because we tried).
+Recorded to stop the AI wizards spamming players with requests every turn.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+	
+	<xsd:complexType name="momTransientPlayerPublicKnowledge">
+	    <xsd:annotation>
+    		<xsd:documentation>Holds all knowledge about a player in the game that is freely known to all players once they have joined the game,
+    										but is not persisted to save game files.  i.e. this is typically info about what we know about what a player is doing during one turn.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="mps:transientPlayerPublicKnowledge">
+		        <xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="movementAllocatedForTurnNumber" type="momimecommon:turnNumber" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="currentlyPlayingCombat" type="xsd:boolean" />
+					
+					<xsd:element minOccurs="0" maxOccurs="1" name="flagColour" type="momimecommon:colour">
+					    <xsd:annotation>
+    						<xsd:documentation>This is transient because it is only used client-side, and can be re-derived from either the customFlagColour or standardPhotoID.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>					
+		        </xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="momGeneralPublicKnowledge">
+	    <xsd:annotation>
+    		<xsd:documentation>Holds all non-player specific knowledge that is commonly known to all players once they have joined the game.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="mps:generalPublicKnowledge">
+		        <xsd:sequence>
+					<xsd:element ref="momimecommon:momDatabase" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="turnNumber" type="momimecommon:turnNumber" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="currentPlayerID" type="mps:playerID">
+					    <xsd:annotation>
+    						<xsd:documentation>Optional because it will be null in simultaneous turns games.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="1" name="turnPhase" type="momimemsgs:turnPhase">
+					    <xsd:annotation>
+    						<xsd:documentation>Optional because it will be null in one-player-at-a-time games.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="1" name="conjunctionEventID" type="momimecommon:eventID">
+					    <xsd:annotation>
+		    				<xsd:documentation>Whether Good/Bad moon or red/green/blue conjunction or Mana Short are currently in effect.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+		        </xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+<!-- Complex types -->
+
+	<xsd:complexType name="magicPowerDistribution">
+	    <xsd:annotation>
+    		<xsd:documentation>Proportions of magic power that is being diverted into mana, research and skill improvement.
+Values must add up to a total of 240.</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="manaRatio" type="momimemsgs:magicPowerDistributionRatio" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="researchRatio" type="momimemsgs:magicPowerDistributionRatio" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="skillRatio" type="momimemsgs:magicPowerDistributionRatio" />
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="overlandMapTerrainData">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores terrain values we remember about a map grid cell after it becomes obscured by Fog of War.
+RiverDirections stores the list of directions in which a river runs from this tile, e.g. a tile with a river heading
+off the tile downwards = 5; so RiverDirections is blank for tiles without a river.</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="0" maxOccurs="1" name="tileTypeID" type="momimecommon:tileTypeID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="mapFeatureID" type="momimecommon:mapFeatureID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="roadTileTypeID" type="momimecommon:tileTypeID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="riverDirections" type="momimecommon:directions" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="nodeOwnerID" type="mps:playerID">
+	    		<xsd:annotation>
+    				<xsd:documentation>This *does* resolve out across the full area of the aura, so will be set for all squares covered by the aura, not just the actual node tile.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="warped" type="xsd:boolean">
+	    		<xsd:annotation>
+    				<xsd:documentation>For warped node auras.  This resolves out across the full area same as nodeOwnerID does, so a player may view
+some of the node aura flashes warped and some not, depending which tiles they've seen.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="corrupted" type="xsd:unsignedShort">
+	    		<xsd:annotation>
+    				<xsd:documentation>This is the number of purify points it will take to return this tile to uncorrupted state.  Uncorrupted tiles have a null here.
+When corruption is cast this gets set to 5.  Each turn a unit spends purifying the location reduces the value by 1.  When it reaches 0, it is set back to null again.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="volcanoOwnerID" type="mps:playerID" />
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="overlandMapCityData">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores what we remember about a city after it becomes obscured by Fog of War.</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="cityPopulation" type="momimecommon:cityPopulationDiv1000" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="numberOfRebels" type="momimecommon:cityPopulationDiv1000" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="minimumFarmers" type="momimecommon:cityPopulationDiv1000" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="optionalFarmers" type="momimecommon:cityPopulationDiv1000" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="cityRaceID" type="momimecommon:raceID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="citySizeID" type="momimecommon:citySizeID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="cityName" type="momimecommon:description" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="currentlyConstructingBuildingID" type="momimecommon:buildingID">
+			    <xsd:annotation>
+    				<xsd:documentation>Null if constructing a unit, or if this is a player's memory and the city isn't ours AND the new game FOW option to see constructions is set to false.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="currentlyConstructingUnitID" type="momimecommon:unitID">
+			    <xsd:annotation>
+    				<xsd:documentation>Null if constructing a building, or if this is a player's memory and the city isn't ours AND the new game FOW option to see constructions is set to false.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="1" maxOccurs="1" name="cityOwnerID" type="mps:playerID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="productionSoFar" type="momimecommon:productionCost">
+			    <xsd:annotation>
+    				<xsd:documentation>Null for Trade Goods and Housing, or if this is a player's memory and the city isn't ours.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="populationEventID" type="momimecommon:eventID">
+			    <xsd:annotation>
+    				<xsd:documentation>Whether Population Boom or Plague events are currently in effect on this city.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="memoryGridCell">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores the things we remember about a map grid cell after it becomes obscured by Fog of War.
+This is the only copy of the map the client has, it never receives a 'true' copy of the map.
+The server has (players + 1) copies of this.  One to store what each player can see, and one 'true' copy of the map.
+
+Note old Delphi version had a seperate permanentGridCell structure for productionSoFar and buildingIdSoldThisTurn, since these values
+are only ever known for our own cities.  That really only makes a difference on the server, because the client only has one FOW memory anyway.
+So the server just duplicates these values into the city owner's memory only.  So simplifies things by only having one map cell structure.</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="0" maxOccurs="1" name="terrainData" type="momimemsgs:overlandMapTerrainData" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="cityData" type="momimemsgs:overlandMapCityData" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="buildingIdSoldThisTurn" type="momimecommon:buildingID" />
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="memoryBuilding">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores a building that we remember after it becomes obscured by Fog of War.</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="buildingURN" type="momimemsgs:buildingURN" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="buildingID" type="momimecommon:buildingID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="cityLocation" type="map:mapCoordinates3D" />
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="memoryCombatAreaEffect">
+	    <xsd:annotation>
+    		<xsd:documentation>One area effect in place at a particular map location.
+For example, node auras giving +2 stats to creatures of their realm, prayer, heavenly light, counter magic.
+
+This isn't stored under the combat map, because we want to be able to set up area effects where the combat hasn't
+happened yet, e.g. so if we scout a node and look at the stats of the creatures inside without actually attacking them they correctly show all their +2 stats.</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="combatAreaEffectURN" type="momimemsgs:combatAreaEffectURN" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="combatAreaEffectID" type="momimecommon:combatAreaEffectID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="mapLocation" type="map:mapCoordinates3D">
+			    <xsd:annotation>
+    				<xsd:documentation>Optional - omitted if the effect applies to the entire map (e.g. eternal night) and therefore cannot be dispelled in combat.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="castingPlayerID" type="mps:playerID">
+			    <xsd:annotation>
+    				<xsd:documentation>Optional - omitted for natural map effects that are not the result of spells, such as node auras.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="castingCost" type="momimecommon:spellCastingCost">
+			    <xsd:annotation>
+    				<xsd:documentation>Optional - omitted for natural map effects that are not the result of spells, such as node auras.
+For CAEs from spells, this is how much the spell cost to cast.  For Counter Magic, this is also the remaining dispelling power of the spell
+and will decrease each time the opponent attempts to cast a spell until it reaches 0 and fizzles out.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="memoryMaintainedSpell">
+	    <xsd:annotation>
+    		<xsd:documentation>Spell that has been cast and is ongoing (typically meaning it requires some amount of mana in maintenance cost).
+
+Caution re: the difference between SpellID, UnitSkillID and CitySpellEffectID - SpellID specifies the original spell ID that was cast,
+but some spells have multiple effects with their own codes - and its these codes that make the spell effect work, not the original SpellID.
+
+e.g. Lionheart is SP141, but the unit skill it grants is SS141 Dark Rituals is SP163 but its effect is SE163
+
+The two spells this is mainly for are:
+     
+Chaos Channels is SP093, but it will grant one of SS093A..C (at random)
+Spell Ward is SP072, but it provides one of the effects SE072C,D,L,N,S (player's choice)</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="spellURN" type="momimemsgs:spellURN" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="castingPlayerID" type="mps:playerID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="targetPlayerID" type="mps:playerID">
+			    <xsd:annotation>
+    				<xsd:documentation>No maintained spells are targeted on wizards, but the one time broadcast of a transient spell might need to fill this in
+so the client knows which wizard portrait to show the animation over.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			
+			<xsd:element minOccurs="0" maxOccurs="1" name="unitURN" type="momimemsgs:unitURN" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="unitSkillID" type="momimecommon:unitSkillID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="castInCombat" type="xsd:boolean" />
+			
+			<xsd:element minOccurs="0" maxOccurs="1" name="cityLocation" type="map:mapCoordinates3D" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="citySpellEffectID" type="momimecommon:citySpellEffectID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="variableDamage" type="momimecommon:unitSkillValue">
+			    <xsd:annotation>
+    				<xsd:documentation>This is used in 2 situations:
+1) When casting overland spells, and there is a delay between casting the spell (and picking any variable damage) and it being ready to actually take effect,
+	we need somewhere to store how much variable damage was originally chosen; and
+2) Unit skills granted from spells where storeSkillValueAsVariableDamage = true (used for Web).</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="momCombatTileLayer">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores the combat tile type ID at a particular layer of one tile of a combat map.</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="layer" type="momimecommon:combatMapLayerID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="combatTileTypeID" type="momimecommon:combatTileTypeID" />
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="momCombatTile">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores details about one tile of a combat map.</xsd:documentation>
+		</xsd:annotation>
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="offMapEdge" type="xsd:boolean" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="wrecked" type="xsd:boolean">
+			    <xsd:annotation>
+    				<xsd:documentation>Set to true when stone walls get a hole knocked in them (via Disrupt Wall spell or Wall Crusher unit skill).</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="1" maxOccurs="1" name="mud" type="xsd:boolean" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="borderDirections" type="momimecommon:directions" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="borderID" type="momimecommon:combatTileBorderID" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="tileLayer" type="momimemsgs:momCombatTileLayer" />
+        </xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="pendingMovementStep">
+	    <xsd:annotation>
+    		<xsd:documentation>Each step in a pending movement.  Direction will only be filled in when its a simple move from one
+tile to an adjacent tile, but even then moveFrom and moveTo may be on different planes if we're walking on/off a tower of wizardry.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="moveFrom" type="map:mapCoordinates3D" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="moveTo" type="map:mapCoordinates3D" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="direction" type="map:mapDirection" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="pendingMovement">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores details about a unit stack's future move.
+    		
+These will be set up in a one-at-a-time game if a unit stack cannot reach their destination in one turn (human
+players only - AI players will never set a movement point outside of their current reach).
+
+They are used in simultaneous movement games for all movement, including AI players.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="moveFrom" type="map:mapCoordinates3D" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="moveTo" type="map:mapCoordinates3D" />
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="unitURN" type="momimemsgs:unitURN" />
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="path" type="momimemsgs:pendingMovementStep" />
+		</xsd:sequence>
+	</xsd:complexType>
+	
+	<xsd:complexType name="availableUnit">
+	    <xsd:annotation>
+    		<xsd:documentation>Unit data items common between available units and the server telling us to add an actual unit.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="owningPlayerID" type="mps:playerID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="unitID" type="momimecommon:unitID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="unitLocation" type="map:mapCoordinates3D">
+			    <xsd:annotation>
+    				<xsd:documentation>The current location of the unit - on the client, units being animated
+to show them moving from one cell to another have their GridCell set to null.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="weaponGrade" type="momimecommon:weaponGradeNumber" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="unitHasSkill" type="momimecommon:unitSkillAndValue" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="memoryUnit">
+	    <xsd:annotation>
+    		<xsd:documentation>One unit actually bought/summoned in the game that is ours or we remember having seen.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="momimemsgs:availableUnit">
+				<xsd:sequence>
+					<xsd:element minOccurs="1" maxOccurs="1" name="unitURN" type="momimemsgs:unitURN" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="heroNameID" type="momimecommon:heroNameID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="unitName" type="momimecommon:description" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="ammoRemaining" type="momimecommon:unitSkillValue">
+					    <xsd:annotation>
+					    	<xsd:documentation>Set to full at start of combat and expended each time a ranged attack is made.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="1" maxOccurs="1" name="manaRemaining" type="momimecommon:unitSkillValue">
+					    <xsd:annotation>
+					    	<xsd:documentation>Set to full at start of combat and expended each time a ranged attack is made or spell is cast by the unit.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="unbounded" name="fixedSpellsRemaining" type="momimecommon:unitSkillValue">
+					    <xsd:annotation>
+					    	<xsd:documentation>For units with 'unitCanCast' values set, allowing them to cast fixed spells without having an MP pool,
+e.g. Giant Spiders 'casting' Web, or Magicians casting Fireball.  Set to full at start of combat and expended each time a spell is used.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="unbounded" name="heroItemSpellChargesRemaining" type="momimecommon:unitSkillValue">
+					    <xsd:annotation>
+					    	<xsd:documentation>For heroes, set to full at start of combat and expended each time a spell imbued in a hero item is cast.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element minOccurs="0" maxOccurs="unbounded" name="unitDamage" type="momimemsgs:unitDamage" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="doubleOverlandMovesLeft" type="momimecommon:doubleMovement" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="specialOrder" type="momimecommon:unitSpecialOrder" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="status" type="momimemsgs:unitStatusID" />
+					<xsd:element minOccurs="1" maxOccurs="1" name="wasSummonedInCombat" type="xsd:boolean" />
+
+					<!-- Combat
+The first 4 values are filled in for units currently participating in a combat (both client+server).
+For units who are in the movement stack, but not in the combat (i.e. in a naval combat, the units sitting in a transport who can't swim) have combatLocation and combatSide
+set, but combatPosition and combatHeading left null (server only). -->
+					<xsd:element minOccurs="0" maxOccurs="1" name="combatLocation" type="map:mapCoordinates3D" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="combatPosition" type="map:mapCoordinates2D" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="combatHeading" type="map:mapDirection" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="combatSide" type="momimecommon:unitCombatSideID" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="doubleCombatMovesLeft" type="momimecommon:doubleMovement" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="confusionEffect" type="momimemsgs:confusionEffect" />
+
+					<!-- Hero items -->
+					<xsd:element minOccurs="0" maxOccurs="unbounded" name="heroItemSlot" type="momimemsgs:memoryUnitHeroItemSlot" />
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+	
+	<xsd:complexType name="memoryUnitHeroItemSlot">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores which item is being used in each item slot on a hero.  We can't just have a 0..unbounded list of heroItem, because if
+there is no item in the first slot but there is in the second, JAXB might not save the null out to keep the list positions correct.  So instead the correct number
+of these containers is created when the unit is created and then the items just assigned and removed from here as necessary.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="0" maxOccurs="1" name="heroItem" type="momimemsgs:numberedHeroItem" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="unitDamage">
+	    <xsd:annotation>
+    		<xsd:documentation>Stores different damage types and amounts that a unit has taken.
+All hits are removed from the first figure until it is dead and disappears, then from the second, and so on.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="damageType" type="momimecommon:storedDamageTypeID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="damageTaken" type="momimecommon:unitSkillValue" />
+		</xsd:sequence>
+	</xsd:complexType>
+	
+<!-- Map areas -->
+
+	<!-- Equivalent of TNDGGridMap3DStringArea -->
+
+	<xsd:complexType name="mapRowOfStrings">
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="cell" type="xsd:normalizedString" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="mapAreaOfStrings">
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="row" type="momimemsgs:mapRowOfStrings" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="mapVolumeOfStrings">
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="plane" type="momimemsgs:mapAreaOfStrings" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<!-- Equivalent of TFogOfWarArea -->
+
+	<xsd:complexType name="mapRowOfFogOfWarStates">
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="cell" type="momimemsgs:fogOfWarStateID" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="mapAreaOfFogOfWarStates">
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="row" type="momimemsgs:mapRowOfFogOfWarStates" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="mapVolumeOfFogOfWarStates">
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="plane" type="momimemsgs:mapAreaOfFogOfWarStates" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<!-- Equivalent of TMomMemoryMap -->
+
+	<xsd:complexType name="mapRowOfMemoryGridCells">
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="cell" type="momimemsgs:memoryGridCell" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="mapAreaOfMemoryGridCells">
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="row" type="momimemsgs:mapRowOfMemoryGridCells" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="mapVolumeOfMemoryGridCells">
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="plane" type="momimemsgs:mapAreaOfMemoryGridCells" />
+		</xsd:sequence>
+	</xsd:complexType>
+	
+	<!-- Equivalent of TMomCombatMap -->
+
+	<xsd:complexType name="mapRowOfCombatTiles">
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="cell" type="momimemsgs:momCombatTile" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="mapAreaOfCombatTiles">
+        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="row" type="momimemsgs:mapRowOfCombatTiles" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+<!-- Enums -->
+
+	<xsd:simpleType name="turnSystem">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="O"><xsd:annotation>
+				<xsd:documentation>One player at a time</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ONE_PLAYER_AT_A_TIME" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="S"><xsd:annotation>
+				<xsd:documentation>Simultaneous</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SIMULTANEOUS" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="captureCityDecisionID">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="C"><xsd:annotation>
+				<xsd:documentation>Capture</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="CAPTURE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="R"><xsd:annotation>
+				<xsd:documentation>Raze</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="RAZE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="M"><xsd:annotation>
+				<xsd:documentation>Rampage (leave city intact)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="RAMPAGE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="F"><xsd:annotation>
+				<xsd:documentation>Ruin</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="RUIN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="fogOfWarStateID">
+	    <xsd:annotation>
+    		<xsd:documentation>Defines how well we can see a particular map cell.
+Only the first 3 are real values.  The last 3 special values are used on the server when re-generating the fog of war state so it
+can determine changes in the fog of war, and only send the changes to each player rather than having to resend the whole area every time.
+
+At start of fog of war routine, possible 3 values are
+NEVER_SEEN, HAVE_SEEN, CAN_SEE
+
+For each map cell that we find we can see, it changes:
+NEVER_SEEN	-> TEMP_SEEING_IT_FOR_FIRST_TIME
+HAVE_SEEN	-> TEMP_SEEING_AFTER_LOST_SIGHT_OF_IT
+CAN_SEE		-> TEMP_CAN_STILL_SEE
+
+After sending the changes to the client, then replaces:
+CAN_SEE													-> HAVE_SEEN, and send to client
+TEMP_SEEING_IT_FOR_FIRST_TIME			-> CAN_SEE, and send to client
+TEMP_SEEING_AFTER_LOST_SIGHT_OF_IT	-> CAN_SEE, and send to client
+TEMP_CAN_STILL_SEE								-> CAN_SEE</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="N"><xsd:annotation>
+				<xsd:documentation>Never seen</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NEVER_SEEN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="H"><xsd:annotation>
+				<xsd:documentation>Have seen</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="HAVE_SEEN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="C"><xsd:annotation>
+				<xsd:documentation>Can seen</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="CAN_SEE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="X"><xsd:annotation>
+				<xsd:documentation>(Special temporary value) Seeing it for the first time</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="TEMP_SEEING_IT_FOR_FIRST_TIME" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="Y"><xsd:annotation>
+				<xsd:documentation>(Special temporary value) Seeing after lost sight of it - we saw it once before, lost sight of it for a while, and it just came back into view again</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="TEMP_SEEING_AFTER_LOST_SIGHT_OF_IT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="Z"><xsd:annotation>
+				<xsd:documentation>(Special temporary value) Can still see - could see it last turn, and still can</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="TEMP_CAN_STILL_SEE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="spellResearchStatusID">
+	    <xsd:annotation>
+    		<xsd:documentation>Different statuses that a spell can have in a player's spell book</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="U"><xsd:annotation>
+				<xsd:documentation>Unavailable - Impossible to get this spell until we get more of this type of book,
+e.g. you cannot get Very Rare spells until you have 3 books, even from trading, conquering nodes or
+banishing a wizard (see strategy guide p168)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="UNAVAILABLE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="N"><xsd:annotation>
+				<xsd:documentation>Not in spell book - Spell isn't in our spell book, so we can't research it - but
+we might be lucky and get it through trading, conquering nodes or banishing a wizard</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NOT_IN_SPELL_BOOK" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="R"><xsd:annotation>
+				<xsd:documentation>Researchable - Just not yet (e.g. you have to research most Common spells before proceeding to Uncommon, etc.)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="RESEARCHABLE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="Y"><xsd:annotation>
+				<xsd:documentation>Researchable now - One of the 8 options for what to research next</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="RESEARCHABLE_NOW" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="A"><xsd:annotation>
+				<xsd:documentation>Available - We've learned it</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="AVAILABLE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="unitStatusID">
+	    <xsd:annotation>
+    		<xsd:documentation>Different statuses that a unit can have.  This is extremely complicated now that there are 2 copies of the unit data to worry about
+(the server's true memory, and the player's memory both as held on the server and client which should be identical).
+
+The server's true memory always knows about all units - they can never go out of sight.  So:
+- Heroes start at "Not Generated" or "Generated" depending on settings, then move to "Alive" when summoned.
+- Regular units are created at "Alive".
+- Units and heroes dying in combat move to status "Dead".
+- At the end of combat, units at staus "Dead" are removed entirely.
+- Even after the end of combat, heroes at status "Dead" are kept forever (since while dead heroes cannot be re-summoned,
+	they can be brought back with the life spell "Resurrection").
+- Combat summons (like fire elementals or phantom warriors) go to status "Dead" when killed, and are removed entirely when the combat ends whether they were alive or not.
+
+The player's memory (both server and client side) never has "Not Generated" or "Generated" heroes - heroes are only added once summoned.  Players' memory of their
+own units otherwise works as per the server's true memory, since players can always see and retain up to date info on their own units.  So:
+- Our units and heroes dying go to status "Dead", and after combat dead units are removed entirely but dead heroes are kept, same as in server's true memory.
+- Enemy units that we kill in combat (i.e. we're involved in the combat) are retained at "Dead" for the duration of the combat and then removed entirely.
+- Enemy heroes that we kill in combat are removed immediately since we can't Raise Dead or Resurrect them.
+- Enemy units and heroes that somebody else kills in a combat for which we are an outside observer (e.g. standing next to 2 unit stacks
+	both owned by other players watching them fight) are removed immediately since we can't Raise Dead or Resurrect them.  And therefore by implication,
+	if one of the players involved in the combat -does- Raise Dead the unit, for any outside observers to the combat, its treated like a re-add.
+- Combat summons (like fire elementals or phantom warriors) go to status "Dead" when killed, and are removed entirely when the combat ends whether they were alive or not.
+- Combat summons are visible by outside observers just like any other unit. 
+- Enemy units that we can no longer see on the overland map if the units FOW setting = forget are removed entirely.
+- Enemy units that we can no longer see on the overland map if the units FOW setting = remember are retained as we last saw them, including that if they get killed,
+	we don't know about it and will continue to remember the last place we saw that unit.
+- The concept of having to scout a lair to see what's in it was removed in 0.9.5 - this so vastly overcomplicated things, where players' memory would only know about
+	details of monster units while we are actually in combat with them, and rules around keeping the 'scoutedMonsterUnitID' up to date in odd scenarios like,
+	"we know the node must now be empty because we can see someone's captured it and/or has a unit standing there", so I decided just to strip it out.  The fact that
+	Units now work with FOW set at "Remember as last seen" rather makes the whole scouting thing redundant anyway.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="N"><xsd:annotation>
+				<xsd:documentation>Not Generated -  Indicates that the hero's skills have not been read from the database, nor their random picks generated.
+Only used when we choose for Hero picks to only be rolled as the hero is summoned, rather than at the start of the game.
+Client never has any heroes at this status.</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NOT_GENERATED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="G"><xsd:annotation>
+				<xsd:documentation>Generated - Stats generated, but hero has never been hired.
+Or hero has been previously hired but we dismissed them.
+Available for summoning via Summon Hero or Summon Champion.
+Client never has any heroes at this status.</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="GENERATED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="A"><xsd:annotation>
+				<xsd:documentation>Alive - The normal - Unit is alive and currently in use.</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ALIVE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="D"><xsd:annotation>
+				<xsd:documentation>For units: Unit killed during the current combat, whether ours or the enemy's, so we can get a list of
+potential targets for a Raise Dead spell.  Dead units are then purged at the end of the combat.
+
+For heroes: Dead heroes are kept even after combat in case they are later resurrected.
+
+On the client, only our own heroes ever go to DEAD - enemy heroes are removed from the unit list completely - even during combat they
+are removed from the list immediately without going to DEAD, since heroes can never be the target of Raise Dead spells anyway.</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="DEAD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="L"><xsd:annotation>
+				<xsd:documentation>Killed by lack of production - Used on the client, so for units killed
+through lack of production, we can still look up their name to show it on the new turn messages.</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="KILLED_BY_LACK_OF_PRODUCTION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="newTurnMessageTypeID">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="P"><xsd:annotation>
+				<xsd:documentation>Population change</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="POPULATION_CHANGE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="B"><xsd:annotation>
+				<xsd:documentation>Completed building</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="COMPLETED_BUILDING" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="A"><xsd:annotation>
+				<xsd:documentation>Abort building</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ABORT_BUILDING" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="D"><xsd:annotation>
+				<xsd:documentation>Destroyed building</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="DESTROYED_BUILDING" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="U"><xsd:annotation>
+				<xsd:documentation>Completed unit</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="COMPLETED_UNIT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="V"><xsd:annotation>
+				<xsd:documentation>Abort unit</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ABORT_UNIT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="S"><xsd:annotation>
+				<xsd:documentation>Summoned unit</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SUMMONED_UNIT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="I"><xsd:annotation>
+				<xsd:documentation>Create artifact</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="CREATE_ARTIFACT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="R"><xsd:annotation>
+				<xsd:documentation>Researched spell</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="RESEARCHED_SPELL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="T"><xsd:annotation>
+				<xsd:documentation>Target spell</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="TARGET_SPELL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="N"><xsd:annotation>
+				<xsd:documentation>Node captured</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NODE_CAPTURED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="L"><xsd:annotation>
+				<xsd:documentation>Node lost</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NODE_LOST" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="X"><xsd:annotation>
+				<xsd:documentation>Unit lack of production</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="UNIT_LACK_OF_PRODUCTION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="Y"><xsd:annotation>
+				<xsd:documentation>Building lack of production</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="BUILDING_LACK_OF_PRODUCTION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="Z"><xsd:annotation>
+				<xsd:documentation>Spell lack of production</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SPELL_LACK_OF_PRODUCTION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="H"><xsd:annotation>
+				<xsd:documentation>Hero gained a level</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="HERO_GAINED_A_LEVEL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="O"><xsd:annotation>
+				<xsd:documentation>Offer hero for hire</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="OFFER_HERO" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="M"><xsd:annotation>
+				<xsd:documentation>Offer units for hire (mercenaries)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="OFFER_UNITS" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="E"><xsd:annotation>
+				<xsd:documentation>Offer item to buy (merchant)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="OFFER_ITEM" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="F"><xsd:annotation>
+				<xsd:documentation>Spell fizzled (was targeted by Spell Blast or Suppress Magic)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SPELL_BLAST" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="unitAddBumpTypeID">
+	    <xsd:annotation>
+    		<xsd:documentation>When we try to add a unit, we can either add it in the city where it was
+constructed/summoned, bump it to the outlying squares, or we could fail to place it at all.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="C"><xsd:annotation>
+				<xsd:documentation>Added in constructing City</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="CITY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="B"><xsd:annotation>
+				<xsd:documentation>Bumped to outside city</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="BUMPED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="N"><xsd:annotation>
+				<xsd:documentation>No room, unit lost</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NO_ROOM" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="wizardState">
+	    <xsd:annotation>
+    		<xsd:documentation>Its public knowledge whether each wizard is banished or not, but we might not
+know this directly from checking the buildings list as we may not be able to see where his wizard's fortress is (or was).
+So need a separate data item for this.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="A"><xsd:annotation>
+				<xsd:documentation>Active with a Wizard's Fortress</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ACTIVE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="B"><xsd:annotation>
+				<xsd:documentation>Banished, and casting Spell of Return</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="BANISHED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="D"><xsd:annotation>
+				<xsd:documentation>Defeated, no cities or units remaining</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="DEFEATED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="turnPhase">
+	    <xsd:annotation>
+    		<xsd:documentation>Current phase within one turn.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="A"><xsd:annotation>
+				<xsd:documentation>Allocating moves</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ALLOCATING_MOVES" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="P"><xsd:annotation>
+				<xsd:documentation>Processing moves</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="PROCESSING_MOVES" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="confusionEffect">
+	    <xsd:annotation>
+    		<xsd:documentation>Possible effects of confusion spell each combat turn.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="N"><xsd:annotation>
+				<xsd:documentation>Do nothing</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="DO_NOTHING" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="R"><xsd:annotation>
+				<xsd:documentation>Move randomly</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="MOVE_RANDOMLY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="O"><xsd:annotation>
+				<xsd:documentation>Controlled by owner of the unit (like normal)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="OWNER_CONTROLLED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="C"><xsd:annotation>
+				<xsd:documentation>Controller by player who cast the confusion spell (the enemy)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="CASTER_CONTROLLED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="diplomacyAction">
+	    <xsd:annotation>
+    		<xsd:documentation>Different diplomacy actions are listed as an enum, rather than making a separate message for every one</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="IT"><xsd:annotation>
+				<xsd:documentation>Initiate diplomacy / request an audience</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="INITIATE_TALKING" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="AT"><xsd:annotation>
+				<xsd:documentation>Accept request to initiate diplomacy</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ACCEPT_TALKING" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="AI"><xsd:annotation>
+				<xsd:documentation>Accept request to initiate diplomacy, but use impatient greeting</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ACCEPT_TALKING_IMPATIENT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="RT"><xsd:annotation>
+				<xsd:documentation>Reject request to initiate diplomacy, or if we were already talking with them, we've lost patience and telling them to go away</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="REJECT_TALKING" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="PW"><xsd:annotation>
+				<xsd:documentation>Propose wizard pact</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="PROPOSE_WIZARD_PACT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="AW"><xsd:annotation>
+				<xsd:documentation>Accept wizard pact</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ACCEPT_WIZARD_PACT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="RW"><xsd:annotation>
+				<xsd:documentation>Reject wizard pact</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="REJECT_WIZARD_PACT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="FW"><xsd:annotation>
+				<xsd:documentation>After wizard pact (goes back to the wizard who agreed to the pact, so they can see improved relation from it)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="AFTER_WIZARD_PACT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="BW"><xsd:annotation>
+				<xsd:documentation>Break wizard pact (nicely from diplomacy screen)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="BREAK_WIZARD_PACT_NICELY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="KW"><xsd:annotation>
+				<xsd:documentation>Broken wizard pact (in response to break wizard pact nicely)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="BROKEN_WIZARD_PACT_NICELY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="CW"><xsd:annotation>
+				<xsd:documentation>Broken wizard pact (in response to attacking a city)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="BROKEN_WIZARD_PACT_CITY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="PA"><xsd:annotation>
+				<xsd:documentation>Propose alliance</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="PROPOSE_ALLIANCE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="AA"><xsd:annotation>
+				<xsd:documentation>Accept alliance</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ACCEPT_ALLIANCE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="RA"><xsd:annotation>
+				<xsd:documentation>Reject alliance</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="REJECT_ALLIANCE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="FA"><xsd:annotation>
+				<xsd:documentation>After alliance (goes back to the wizard who agreed to the alliance, so they can see improved relation from it)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="AFTER_ALLIANCE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="BA"><xsd:annotation>
+				<xsd:documentation>Break alliance (nicely from diplomacy screen)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="BREAK_ALLIANCE_NICELY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="KA"><xsd:annotation>
+				<xsd:documentation>Broken alliance (in response to break alliance nicely)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="BROKEN_ALLIANCE_NICELY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="CA"><xsd:annotation>
+				<xsd:documentation>Broken alliance (in response to attacking a city)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="BROKEN_ALLIANCE_CITY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="UA"><xsd:annotation>
+				<xsd:documentation>Broken alliance (in response to attacking units)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="BROKEN_ALLIANCE_UNITS" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="PP"><xsd:annotation>
+				<xsd:documentation>Propose peace treaty</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="PROPOSE_PEACE_TREATY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="AP"><xsd:annotation>
+				<xsd:documentation>Accept peace treaty</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ACCEPT_PEACE_TREATY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="RP"><xsd:annotation>
+				<xsd:documentation>Reject peace treaty</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="REJECT_PEACE_TREATY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="FP"><xsd:annotation>
+				<xsd:documentation>After peace treaty (goes back to the wizard who agreed to the peace treaty, so they can see improved relation from it)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="AFTER_PEACE_TREATY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="CD"><xsd:annotation>
+				<xsd:documentation>Declare war (in response to attacking a city)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="DECLARE_WAR_CITY" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="PD"><xsd:annotation>
+				<xsd:documentation>Propose declare war on another wizard</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="PROPOSE_DECLARE_WAR_ON_OTHER_WIZARD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="AD"><xsd:annotation>
+				<xsd:documentation>Accept declare war on another wizard</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ACCEPT_DECLARE_WAR_ON_OTHER_WIZARD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="RD"><xsd:annotation>
+				<xsd:documentation>Reject declare war on another wizard</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="REJECT_DECLARE_WAR_ON_OTHER_WIZARD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="FD"><xsd:annotation>
+				<xsd:documentation>After declare war on other wizard (goes back to the wizard who agreed to declare war, so they can see improved relation from it)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="AFTER_DECLARE_WAR_ON_OTHER_WIZARD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="OD"><xsd:annotation>
+				<xsd:documentation>Declaring war on you because someone else asked us to</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="DECLARE_WAR_ON_YOU_BECAUSE_OF_OTHER_WIZARD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="UD"><xsd:annotation>
+				<xsd:documentation>We were asked to declare war on a wizard that we don't even know</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="CANNOT_DECLARE_WAR_ON_UNKNOWN_WIZARD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="PB"><xsd:annotation>
+				<xsd:documentation>Propose break alliance with another wizard</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="PROPOSE_BREAK_ALLIANCE_WITH_OTHER_WIZARD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="AB"><xsd:annotation>
+				<xsd:documentation>Accept break alliance with another wizard</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ACCEPT_BREAK_ALLIANCE_WITH_OTHER_WIZARD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="RB"><xsd:annotation>
+				<xsd:documentation>Reject break alliance with another wizard</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="REJECT_BREAK_ALLIANCE_WITH_OTHER_WIZARD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="FB"><xsd:annotation>
+				<xsd:documentation>After break alliance with other wizard (goes back to the wizard who agreed to break their alliance, so they can see improved relation from it)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="AFTER_BREAK_ALLIANCE_WITH_OTHER_WIZARD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="OB"><xsd:annotation>
+				<xsd:documentation>Breaking alliance with you because someone else asked us to</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="BREAK_ALLIANCE_WITH_YOU_BECAUSE_OF_OTHER_WIZARD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="PE"><xsd:annotation>
+				<xsd:documentation>Propose exchange spell</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="PROPOSE_EXCHANGE_SPELL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="NE"><xsd:annotation>
+				<xsd:documentation>No exchange of spells possible (each player must have at least 1 spell they can trade to the other)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NO_SPELLS_TO_EXCHANGE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="AE"><xsd:annotation>
+				<xsd:documentation>Accept exchange spell</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ACCEPT_EXCHANGE_SPELL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="FE"><xsd:annotation>
+				<xsd:documentation>After exchange spell (goes back to initator after they agree to give the spell the other wizard wants)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="AFTER_EXCHANGE_SPELL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="RF"><xsd:annotation>
+				<xsd:documentation>Refuse exchange spell (other player immediately refuses to give us what we want, because we have nothing good to offer in return)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="REFUSE_EXCHANGE_SPELL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="RE"><xsd:annotation>
+				<xsd:documentation>Reject exchange spell (other player will give us the spell we want, but makes an unreasonable demand in return, so we reject it)</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="REJECT_EXCHANGE_SPELL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="GG"><xsd:annotation>
+				<xsd:documentation>Give gold</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="GIVE_GOLD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="AG"><xsd:annotation>
+				<xsd:documentation>Accept gold</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ACCEPT_GOLD" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="GS"><xsd:annotation>
+				<xsd:documentation>Give spell</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="GIVE_SPELL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="AS"><xsd:annotation>
+				<xsd:documentation>Accept spell</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ACCEPT_SPELL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="TA"><xsd:annotation>
+				<xsd:documentation>Threaten to attack</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="THREATEN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="TI"><xsd:annotation>
+				<xsd:documentation>Ignore threat</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="IGNORE_THREAT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="TG"><xsd:annotation>
+				<xsd:documentation>Give gold becasue threatened</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="GIVE_GOLD_BECAUSE_THREATENED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="TS"><xsd:annotation>
+				<xsd:documentation>Give spell because threatened</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="GIVE_SPELL_BECAUSE_THREATENED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="TE"><xsd:annotation>
+				<xsd:documentation>No exchange of spells possible</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NO_SPELLS_TO_EXCHANGE_BECAUSE_THREATENED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="TW"><xsd:annotation>
+				<xsd:documentation>Declare war because threatened</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="DECLARE_WAR_BECAUSE_THREATENED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="PC"><xsd:annotation>
+				<xsd:documentation>Pass control - see if other wizard wants to make any proposals</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="PASS_CONTROL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="EC"><xsd:annotation>
+				<xsd:documentation>Wizard who initiated diplomacy ends the conversation</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="END_CONVERSATION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="GI"><xsd:annotation>
+				<xsd:documentation>Wizard on the receiving end ends the conversation</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="GROWN_IMPATIENT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="pactType">
+	    <xsd:annotation>
+    		<xsd:documentation>Different pacts or statuses between two wizards.  If two wizards don't have a pact listed, they're at default state (neither at war or agreed pact).</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="P"><xsd:annotation>
+				<xsd:documentation>Wizard pact</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="WIZARD_PACT" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="A"><xsd:annotation>
+				<xsd:documentation>Alliance</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ALLIANCE" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="W"><xsd:annotation>
+				<xsd:documentation>War</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="WAR" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+<!--  Simple types -->
+	
+	<xsd:simpleType name="unitURN">
+	    <xsd:annotation>
+    		<xsd:documentation>Unique identifier allocated to each unit existing in a particular game.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="buildingURN">
+	    <xsd:annotation>
+    		<xsd:documentation>Unique identifier allocated to each building existing in a particular game.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="spellURN">
+	    <xsd:annotation>
+    		<xsd:documentation>Unique identifier allocated to each spell existing in a particular game.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="combatAreaEffectURN">
+	    <xsd:annotation>
+    		<xsd:documentation>Unique identifier allocated to each CAE existing in a particular game.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="heroItemURN">
+	    <xsd:annotation>
+    		<xsd:documentation>Unique identifier allocated to each hero item existing in a particular game.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="magicPowerDistributionRatio">
+	    <xsd:annotation>
+    		<xsd:documentation>Value 0..240 indicating the proportion of magic power to divert into mana/research/skill improvement.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="listIndex">
+		<xsd:annotation>
+			<xsd:documentation>An index into an unbounded list.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort" />
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="offerURN">
+	    <xsd:annotation>
+    		<xsd:documentation>Unique identifier allocated to each offer generated in a game.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort" />
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="combatURN">
+	    <xsd:annotation>
+    		<xsd:documentation>Unique identifier allocated to each combat taking place in a game.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort" />
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="impatienceLevel">
+	    <xsd:annotation>
+    		<xsd:documentation>Holds how many diplomatic requests a wizard has made to us.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort" />
+	</xsd:simpleType>
+	
+</xsd:schema>

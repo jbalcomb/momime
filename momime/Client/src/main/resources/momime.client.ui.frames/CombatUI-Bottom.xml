@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns2:xmlLayoutContainer xmlns:ns2="http://ndg.com/utils/swing/layoutmanagers/xmllayout">
+	<formWidth>640</formWidth>
+	<formHeight>480</formHeight>
+	<component name="frmCombatSpell">
+		<left>288</left>
+		<top>8</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatWait">
+		<left>340</left>
+		<top>8</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatDone">
+		<left>340</left>
+		<top>28</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatFlee">
+		<left>288</left>
+		<top>28</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatAuto">
+		<left>288</left>
+		<top>48</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatToggleDamageCalculations">
+		<left>340</left>
+		<top>48</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatDefendingPlayer">
+		<left>83</left>
+		<top>8</top>
+		<horizontalAlignment>0.5</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatAttackingPlayer">
+		<left>560</left>
+		<top>8</top>
+		<horizontalAlignment>0.5</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatDefendingPlayerHumanOrAI">
+		<left>83</left>
+		<top>43</top>
+		<horizontalAlignment>0.5</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatAttackingPlayerHumanOrAI">
+		<left>560</left>
+		<top>43</top>
+		<horizontalAlignment>0.5</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatSkillLabel">
+		<left>398</left>
+		<top>8</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatManaLabel">
+		<left>398</left>
+		<top>22</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatRangeLabel">
+		<left>398</left>
+		<top>36</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCastableLabel">
+		<left>398</left>
+		<top>54</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatSkill">
+		<left>475</left>
+		<top>8</top>
+		<horizontalAlignment>1.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatMana">
+		<left>475</left>
+		<top>22</top>
+		<horizontalAlignment>1.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatRange">
+		<left>475</left>
+		<top>36</top>
+		<horizontalAlignment>1.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCastable">
+		<left>475</left>
+		<top>54</top>
+		<horizontalAlignment>1.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCurrentUnitName">
+		<left>225</left>
+		<top>4</top>
+		<horizontalAlignment>0.5</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCurrentUnitMelee">
+		<left>216</left>
+		<top>26</top>
+		<horizontalAlignment>1.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCurrentUnitRanged">
+		<left>216</left>
+		<top>40</top>
+		<horizontalAlignment>1.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCurrentUnitMovement">
+		<left>216</left>
+		<top>54</top>
+		<horizontalAlignment>1.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCurrentUnitMeleeImage">
+		<left>218</left>
+		<top>26</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCurrentUnitRangedImage">
+		<left>218</left>
+		<top>40</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCurrentUnitMovementImage">
+		<left>218</left>
+		<top>54</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCurrentUnitImage">
+		<left>168</left>
+		<top>28</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCurrentUnitMeleeAverageHits">
+		<left>234</left>
+		<top>26</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCurrentUnitRangedAverageHits">
+		<left>234</left>
+		<top>40</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatDefenderCombatAreaEffects">
+		<left>13</left>
+		<top>76</top>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatAttackerCombatAreaEffects">
+		<left>631</left>
+		<top>76</top>
+		<horizontalAlignment>1.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCommonCombatAreaEffects">
+		<left>322</left>
+		<top>76</top>
+		<horizontalAlignment>0.5</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatSelectSpellTargetDefender">
+		<left>6</left>
+		<top>6</top>
+		<width>154</width>
+		<height>42</height>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCancelSpellDefender">
+		<left>83</left>
+		<top>52</top>
+		<horizontalAlignment>0.5</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatSelectSpellTargetAttacker">
+		<left>486</left>
+		<top>6</top>
+		<width>148</width>
+		<height>42</height>
+		<horizontalAlignment>0.0</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+	<component name="frmCombatCancelSpellAttacker">
+		<left>560</left>
+		<top>52</top>
+		<horizontalAlignment>0.5</horizontalAlignment>
+		<verticalAlignment>0.0</verticalAlignment>
+	</component>
+</ns2:xmlLayoutContainer>

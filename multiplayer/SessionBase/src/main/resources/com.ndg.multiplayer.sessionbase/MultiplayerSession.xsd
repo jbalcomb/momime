@@ -1,0 +1,919 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jaxb="https://jakarta.ee/xml/ns/jaxb" xmlns:mp="http://www.ndg.com/multiplayer/base"
+	xmlns:mps="http://www.ndg.com/multiplayer/sessionbase" targetNamespace="http://www.ndg.com/multiplayer/sessionbase"
+	jaxb:version="3.0">
+
+	<!-- This project contains data types and code to add session and client information and state to the base messaging layer.
+
+			It contains structures describing each session and client, and messages allowing clients to list sessions to join, create sessions,
+			and be kept updated as other clients join or leave their session.
+			
+			It has built in ability to allow recovery if clients to disconnect (e.g. lose internet connection) - so they can rejoin the
+			same game as they were in before, and continue where they left off.  Even if all players disconnect at once, the game
+			state should not be lost.
+			
+			That means clients must be able to authenticate their identity against a user registry, so that when they reconnect the
+			server is aware of what game they were already in and rejoin it.  playerID is the unique identity of the player within the user registry.
+			
+			It also has built in ability for the server to be able to save the game state. -->
+
+	<xsd:import namespace="http://www.ndg.com/multiplayer/base" />
+    
+	<!-- Fixed structures -->
+    
+	<xsd:complexType name="sessionDescription">
+		<xsd:annotation><xsd:documentation>Holds information about a session that
+			a) is fixed and can't be changed after the session is created
+			b) a player requesting to create a new session must provide, and
+			c) will be publicly available for players not yet in a session to view, so they can decide whether to join or not
+		</xsd:documentation></xsd:annotation>
+	        <xsd:sequence>
+			<xsd:element minOccurs="0" maxOccurs="1" name="sessionID" type="mps:sessionID" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="maxPlayers" type="xsd:int">
+				<xsd:annotation><xsd:documentation>Maximum number of players who are allowed to join the session; 0 = unlimited</xsd:documentation></xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="0" maxOccurs="1" name="startedAt" type="xsd:dateTime" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="sessionName" type="mps:sessionName" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="savedGameID" type="mps:savedGameID">
+				<xsd:annotation><xsd:documentation>Unique ID allocated to saved game files recorded from this session; null if this session isn't being saved</xsd:documentation></xsd:annotation>
+			</xsd:element>
+	        </xsd:sequence>
+	</xsd:complexType>
+	
+	<xsd:complexType name="playerDescription">
+		<xsd:annotation><xsd:documentation>Holds information about a player that
+			a) is fixed and can't be changed after the player is created
+			b) a player requesting to create a new session or join an existing session must provide, and
+			c) will be publicly available for players not yet in a session to view, so they can decide whether to join or not</xsd:documentation>
+	        </xsd:annotation>
+        	<xsd:sequence>
+			<xsd:element minOccurs="0" maxOccurs="1" name="playerID" type="mps:playerID" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="playerType" type="mps:playerType" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="playerName" type="mps:playerName" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="sessionAndPlayerDescriptions">
+		<xsd:annotation>
+			<xsd:documentation>Holds public information about a session and all of the players in it</xsd:documentation>
+		</xsd:annotation>
+	        <xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="sessionDescription" type="mps:sessionDescription" />
+			<xsd:element minOccurs="1" maxOccurs="unbounded" name="player" type="mps:playerDescription" />
+		</xsd:sequence>
+	</xsd:complexType>
+	
+	<!-- Varying structures -->
+
+	<xsd:complexType name="generalServerKnowledge">
+		<xsd:annotation><xsd:documentation>Holds information that only the server knows, and is not available publicly to anyone
+			who hasn't joined the session, or to players in the session.  Main purpose of forcing server to
+			declare all game state variables in an XSD structure inheriting from this is so that it can
+			all be easily persisted to an XML file in order to save games.</xsd:documentation>
+		</xsd:annotation>
+	</xsd:complexType>
+
+	<xsd:complexType name="generalPublicKnowledge">
+		<xsd:annotation>
+			<xsd:documentation>Holds information that is commonly known to all players and the server in this session, just cannot be seen
+				by players who have not yet joined the session</xsd:documentation>
+		</xsd:annotation>
+	</xsd:complexType>
+
+	<xsd:complexType name="persistentPlayerPrivateKnowledge">
+		<xsd:annotation>
+			<xsd:documentation>Holds information that is known only to this player which is persisted into save game files, e.g. which parts of the map they have seen.  This then
+				a) can be resent to a player if the disconnect/crash and rejoin
+				b) can be persisted as part of saved game XML files
+				c) is available both client and server side</xsd:documentation>
+		</xsd:annotation>
+	</xsd:complexType>
+
+	<xsd:complexType name="persistentPlayerPublicKnowledge">
+		<xsd:annotation>
+			<xsd:documentation>Holds information about a player that is known to other players once they join the session and is persisted into save game files, so is public
+				player info like the playerDescription, but that is able to change.  Other difference is playerDescription must be
+				set before player can request to join a game - playerPublicKnowledge is empty when they join and assumed to
+				be built up afterwards.</xsd:documentation>
+		</xsd:annotation>
+	</xsd:complexType>
+
+	<xsd:complexType name="transientPlayerPrivateKnowledge">
+		<xsd:annotation>
+			<xsd:documentation>Holds information that is known only to this player and is not persisted into save game files,</xsd:documentation>
+		</xsd:annotation>
+	</xsd:complexType>
+
+	<xsd:complexType name="transientPlayerPublicKnowledge">
+		<xsd:annotation>
+			<xsd:documentation>Holds information about a player that is known to other players but not persisted into save game files.</xsd:documentation>
+		</xsd:annotation>
+	</xsd:complexType>
+
+	<xsd:complexType name="playerCombinedPublicInfo">
+		<xsd:annotation>
+			<xsd:documentation>Combines all publicly known information blocks about a player.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="playerDescription" type="mps:playerDescription" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="persistentPlayerPublicKnowledge" type="mps:persistentPlayerPublicKnowledge" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="transientPlayerPublicKnowledge" type="mps:transientPlayerPublicKnowledge" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<!-- Messages -->
+
+	<xsd:element name="createAccount">
+		<xsd:annotation>
+			<xsd:documentation>Request creation of a user account on the server; the playerName is then reserved for that person</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerName" type="mps:playerName" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerPassword" type="mps:playerPassword" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="createAccountSuccessful">
+		<xsd:annotation>
+			<xsd:documentation>Server indicating player ID allocated to new account</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerID" type="mps:playerID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="createAccountFailed">
+		<xsd:annotation>
+			<xsd:documentation>Server explaining why request to create an account was rejected</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="reason" type="mps:createAccountFailedReason" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="login">
+		<xsd:annotation>
+			<xsd:documentation>Authenticates player's username and password with the server user registry</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerName" type="mps:playerName" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerPassword" type="mps:playerPassword" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="kickExistingConnection" type="xsd:boolean" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="loginSuccessful">
+		<xsd:annotation>
+			<xsd:documentation>Server authenticated player, and informing player of any sessions they disconnected from or are being reloaded</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerID" type="mps:playerID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerName" type="mps:playerName" />
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="session" type="mps:sessionAndPlayerDescriptions" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="loginFailed">
+		<xsd:annotation>
+			<xsd:documentation>Server explaining why login attempt failed</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="reason" type="mps:loginFailedReason" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="kickedByAnotherLogin">
+		<xsd:annotation>
+			<xsd:documentation>Server forcibly logged out player because another connection logged on with their player name and ID</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="logout">
+		<xsd:annotation>
+			<xsd:documentation>Logs off the current player</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="logoutSuccessful">
+		<xsd:annotation>
+			<xsd:documentation>Server logged out current player successfully</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="logoutFailed">
+		<xsd:annotation>
+			<xsd:documentation>Server explaining why logout attempt failed</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="reason" type="mps:logoutFailedReason" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="requestSessionList">
+		<xsd:annotation>
+			<xsd:documentation>Requests that server send us a list of sessions that we are either disconnected from, reloading, or free to accept a new player</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="requestSessionListSuccessful">
+		<xsd:annotation>
+			<xsd:documentation>Server giving client a list of all sessions that they are either disconnected from, reloading, or will accept them as a new player</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="session" type="mps:sessionAndPlayerDescriptions" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="requestSessionListFailed">
+		<xsd:annotation>
+			<xsd:documentation>Server explaining why it would not provide us a list of sessions</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="reason" type="mps:requestSessionListFailedReason" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="newSession">
+		<xsd:annotation>
+			<xsd:documentation>Requests that server creates a new session and joins the player as the first player in it</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="sessionDescription" type="mps:sessionDescription" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerDescription" type="mps:playerDescription" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="joinSession">
+		<xsd:annotation>
+			<xsd:documentation>Request to join an existing session, either one we previously disconnected from, reloading, or is accepting new players</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="sessionID" type="mps:sessionID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerDescription" type="mps:playerDescription" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="joinSuccessful">
+		<xsd:annotation>
+			<xsd:documentation>Server replying that a client has successfully joined a session - can be a reply to a new, join, rejoin or load game request.
+			
+				Provides the list of players now in the session - this will include the player who sent the join request, but they
+				cannot assume that they will be the last player in the list, since in the case of a rejoin they will be reinserted
+				back into their original order slot.
+											
+				Also provides to the client all their private knowledge - especially in case of rejoining after a disconnect/crash.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="reason" type="mps:joinSuccessfulReason" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="sessionDescription" type="mps:sessionDescription" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="generalPublicKnowledge" type="mps:generalPublicKnowledge" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="persistentPlayerPrivateKnowledge" type="mps:persistentPlayerPrivateKnowledge">
+							<xsd:annotation>
+								<xsd:documentation>Private info for the client this message is being sent to.</xsd:documentation>
+        					</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="0" maxOccurs="1" name="transientPlayerPrivateKnowledge" type="mps:transientPlayerPrivateKnowledge">
+							<xsd:annotation>
+								<xsd:documentation>Private info for the client this message is being sent to.</xsd:documentation>
+        					</xsd:annotation>
+						</xsd:element>
+						<xsd:element minOccurs="1" maxOccurs="unbounded" name="player" type="mps:playerCombinedPublicInfo" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="joinFailed">
+		<xsd:annotation>
+			<xsd:documentation>Server explaining why request to join a session was rejected  - can be a reply to a new, join or rejoin request.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="reason" type="mps:joinFailedReason" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="leaveSession">
+		<xsd:annotation>
+			<xsd:documentation>Requests that we want to leave the session we are in</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="leaveSessionFailed">
+		<xsd:annotation>
+			<xsd:documentation>Server explaining why request to leave a session was rejected.  NB. There is no leaveSessionSuccessful message since
+				the server will reply with playerLeft specifying our own playerID.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="reason" type="mps:leaveSessionFailedReason" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="playerLeft">
+		<xsd:annotation>
+			<xsd:documentation>Server informing us of a player leaving our session.  This only gets sent if the server considers the player to have left.
+				If the player simply disconnected the server may keep them in the session - this behaviour is application specific</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerID" type="mps:playerID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="additionalPlayerJoined">
+		<xsd:annotation>
+			<xsd:documentation>Server informing us of an additional player joining our session.  This only gets sent if the player is genuinely new
+				to the session - if they disconnect and rejoin back into their original slot, this message will not be sent.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="player" type="mps:playerCombinedPublicInfo" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="sessionEnding">
+		<xsd:annotation>
+			<xsd:documentation>Server informing us that the session we are currently in is ending (TBD the conditions under which this happens)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<!-- Saved games support -->
+
+	<xsd:element name="browseSavedGames">
+		<xsd:annotation>
+			<xsd:documentation>Requests that server send us a list of sessions that we created and saved game file(s) exist for</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="browseSavedGamesSuccessful">
+		<xsd:annotation>
+			<xsd:documentation>Server giving client a list of all sessions that we created and saved game file(s) exist for</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="savedGameSession" type="mps:savedGameSession" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="browseSavedGamesFailed">
+		<xsd:annotation>
+			<xsd:documentation>Server explaining why it would not provide us a list of sessions that we created and saved game file(s) exist for</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="reason" type="mps:browseSavedGamesFailedReason" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:complexType name="savedGameSession">
+		<xsd:annotation>
+			<xsd:documentation>Stores information that the server sends back to the client about each session that has saved game file(s) we can reload</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="sessionDescription" type="mps:sessionDescription" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="latestSavedAt" type="xsd:dateTime" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="latestSavedGameIdentifier" type="mps:savedGameIdentifier" />
+			<xsd:element minOccurs="0" maxOccurs="unbounded" name="player" type="mps:playerDescription" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="deleteSavedGame">
+		<xsd:annotation>
+			<xsd:documentation>Requests that server delete all the save points for a particular saved session</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="savedGameID" type="mps:savedGameID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="deleteSavedGameSuccessful">
+		<xsd:annotation>
+			<xsd:documentation>Server successfully deleted a saved game including all its save points</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage" />
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="deleteSavedGameFailed">
+		<xsd:annotation>
+			<xsd:documentation>Server explaining why it failed to delete a saved game</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="reason" type="mps:deleteSavedGameFailedReason" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="browseSavePoints">
+		<xsd:annotation>
+			<xsd:documentation>Requests that server send us a list of individual save points for a particular saved session</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="savedGameID" type="mps:savedGameID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="browseSavePointsSuccessful">
+		<xsd:annotation>
+			<xsd:documentation>Server giving client a list of individual save points for a particular saved session</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="0" maxOccurs="unbounded" name="savedGamePoint" type="mps:savedGamePoint" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="browseSavePointsFailed">
+		<xsd:annotation>
+			<xsd:documentation>Server explaining why it would not provide us a list of individual save points for a particular saved session</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="reason" type="mps:browseSavePointsFailedReason" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:complexType name="savedGamePoint">
+		<xsd:annotation>
+			<xsd:documentation>Stores information that the server sends back to the client about each individual save point for a particular saved session</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element minOccurs="1" maxOccurs="1" name="savedAt" type="xsd:dateTime" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="savedGameFilename" type="mps:savedGameFilename" />
+			<xsd:element minOccurs="0" maxOccurs="1" name="savedGameIdentifier" type="mps:savedGameIdentifier" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="loadGame">
+		<xsd:annotation>
+			<xsd:documentation>Requests that server load and start up a session from a saved game file</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:clientToServerMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="savedGameID" type="mps:savedGameID" />
+						<xsd:element minOccurs="1" maxOccurs="1" name="savedGameFilename" type="mps:savedGameFilename" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="loadGameFailed">
+		<xsd:annotation>
+			<xsd:documentation>Server explaining why it would not load and start up a session from a saved game file</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="reason" type="mps:loadGameFailedReason" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="updateHumanPlayerToAI">
+		<xsd:annotation>
+			<xsd:documentation>Server telling everybody that a human player has been replaced by an AI player.  They keep the same playerID.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="mp:serverToClientMessage">
+					<xsd:sequence>
+						<xsd:element minOccurs="1" maxOccurs="1" name="playerID" type="mps:playerID" />
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<!-- Simple types -->
+	
+	<xsd:simpleType name="sessionID">
+		<xsd:annotation>
+			<xsd:documentation>Unique ID allocated by the server to this session; session IDs are valid only for the current execution of the server.
+				Once the server is shut down and restarted, it will start allocating session IDs starting at 1 again.
+				If a game is saved and reloaded, it is unlikely it will be allocated the same session ID.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:int" />
+	</xsd:simpleType>	
+
+	<xsd:simpleType name="sessionName">
+		<xsd:restriction base="xsd:normalizedString" />
+	</xsd:simpleType>	
+
+	<xsd:simpleType name="playerID">
+		<xsd:annotation>
+			<xsd:documentation>Unique ID allocated by the server to a player in the server's user registry.  These persist across server executions, so once
+				a player creates an account and is allocated playerID 123, they will always relog back in as player 123.
+				AI players are given negative player IDs, which are not unique between sessions, so e.g. all sessions' first AI player will be numbered -1.'</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:int" />
+	</xsd:simpleType>	
+
+	<xsd:simpleType name="savedGameID">
+		<xsd:annotation>
+			<xsd:documentation>Unique ID allocated to each game created by a particular player on the server.  These are local to each player, that is each
+				player will have their own savedGameID 1.  Players are not allowed to access each other's saved games.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:int" />
+	</xsd:simpleType>	
+
+	<xsd:simpleType name="savedGameIdentifier">
+		<xsd:annotation>
+			<xsd:documentation>Individual save points are recorded with a timestamp to keep them in chronological order; aside from that,
+				the application can mark each with an identifier of some kind to help the player choose which they want to reload later, e.g. a turn number.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:normalizedString" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="savedGameFilename">
+		<xsd:annotation>
+			<xsd:documentation>Internal filename allocated by the server to a particular save point.  The client shouldn't assume anything about the format of
+				this filename nor display it to the user in any way - it is present only to replay back to the server in a loadGame request.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:normalizedString" />
+	</xsd:simpleType>
+
+	<xsd:simpleType name="playerName">
+		<xsd:restriction base="xsd:normalizedString" />
+	</xsd:simpleType>	
+
+	<xsd:simpleType name="playerPassword">
+		<xsd:restriction base="xsd:normalizedString" />
+	</xsd:simpleType>
+		
+	<xsd:simpleType name="createAccountFailedReason">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="E"><xsd:annotation>
+				<xsd:documentation>Player already exists</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="PLAYER_ALREADY_EXISTS" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="loginFailedReason">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="L"><xsd:annotation>
+				<xsd:documentation>Your connection is already logged in</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="YOUR_CONNECTION_IS_ALREADY_LOGGED_IN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="P"><xsd:annotation>
+				<xsd:documentation>Player name or password not recognized</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="PLAYER_NAME_OR_PASSWORD_NOT_RECOGNIZED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="K"><xsd:annotation>
+				<xsd:documentation>Another connection is logged in using your Player name and ID</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ANOTHER_CONNECTION_USING_YOUR_PLAYER_ID" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="logoutFailedReason">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="L"><xsd:annotation>
+				<xsd:documentation>Not logged in</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NOT_LOGGED_IN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="requestSessionListFailedReason">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="L"><xsd:annotation>
+				<xsd:documentation>Not logged in</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NOT_LOGGED_IN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="joinSuccessfulReason">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="N"><xsd:annotation>
+				<xsd:documentation>New session</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NEW_SESSION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="J"><xsd:annotation>
+				<xsd:documentation>Joined session</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="JOINED_SESSION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="R"><xsd:annotation>
+				<xsd:documentation>Rejoined session after disconnect</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="REJOINED_SESSION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="L"><xsd:annotation>
+				<xsd:documentation>Loaded saved game</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="LOADED_SAVED_GAME" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="joinFailedReason">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="L"><xsd:annotation>
+				<xsd:documentation>Not logged in</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NOT_LOGGED_IN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="A"><xsd:annotation>
+				<xsd:documentation>Already in session</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ALREADY_IN_SESSION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="N"><xsd:annotation>
+				<xsd:documentation>Session ID not found</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SESSION_ID_NOT_FOUND" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="F"><xsd:annotation>
+				<xsd:documentation>Session full</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SESSION_FULL" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="C"><xsd:annotation>
+				<xsd:documentation>Player has been converted to an AI player</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="CONVERTED_TO_AI" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="leaveSessionFailedReason">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="L"><xsd:annotation>
+				<xsd:documentation>Not logged in</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NOT_LOGGED_IN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="S"><xsd:annotation>
+				<xsd:documentation>Not in a session</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NOT_IN_SESSION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="browseSavedGamesFailedReason">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="L"><xsd:annotation>
+				<xsd:documentation>Not logged in</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NOT_LOGGED_IN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="A"><xsd:annotation>
+				<xsd:documentation>Already in session</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ALREADY_IN_SESSION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="U"><xsd:annotation>
+				<xsd:documentation>Server doesn't support saved games</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SAVED_GAMES_NOT_SUPPORTED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="deleteSavedGameFailedReason">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="L"><xsd:annotation>
+				<xsd:documentation>Not logged in</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NOT_LOGGED_IN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="A"><xsd:annotation>
+				<xsd:documentation>Already in session</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ALREADY_IN_SESSION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="G"><xsd:annotation>
+				<xsd:documentation>Save Game ID not found</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SAVE_GAME_ID_NOT_FOUND" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="U"><xsd:annotation>
+				<xsd:documentation>Server doesn't support saved games</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SAVED_GAMES_NOT_SUPPORTED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="browseSavePointsFailedReason">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="L"><xsd:annotation>
+				<xsd:documentation>Not logged in</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NOT_LOGGED_IN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="A"><xsd:annotation>
+				<xsd:documentation>Already in session</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ALREADY_IN_SESSION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="G"><xsd:annotation>
+				<xsd:documentation>Save Game ID not found</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SAVE_GAME_ID_NOT_FOUND" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="U"><xsd:annotation>
+				<xsd:documentation>Server doesn't support saved games</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SAVED_GAMES_NOT_SUPPORTED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="loadGameFailedReason">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="L"><xsd:annotation>
+				<xsd:documentation>Not logged in</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="NOT_LOGGED_IN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="A"><xsd:annotation>
+				<xsd:documentation>Already in session</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="ALREADY_IN_SESSION" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="G"><xsd:annotation>
+				<xsd:documentation>Save Game ID not found</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SAVE_GAME_ID_NOT_FOUND" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="F"><xsd:annotation>
+				<xsd:documentation>Filename not found</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SAVE_GAME_FILENAME_NOT_FOUND" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="U"><xsd:annotation>
+				<xsd:documentation>Server doesn't support saved games</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="SAVED_GAMES_NOT_SUPPORTED" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="playerType">
+		<xsd:restriction base="xsd:normalizedString">
+			<xsd:enumeration value="H"><xsd:annotation>
+				<xsd:documentation>Human player</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="HUMAN" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="A"><xsd:annotation>
+				<xsd:documentation>AI player</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="AI" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+			<xsd:enumeration value="C"><xsd:annotation>
+				<xsd:documentation>Human player converted to AI player</xsd:documentation>
+				<xsd:appinfo><jaxb:typesafeEnumMember name="HUMAN_CONVERTED_TO_AI" /></xsd:appinfo>
+			</xsd:annotation></xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+</xsd:schema>

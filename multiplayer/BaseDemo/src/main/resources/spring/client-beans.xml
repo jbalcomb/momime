@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+	
+	<import resource="common-beans.xml"/>
+	
+	<bean id="utils" class="com.ndg.utils.swing.NdgUIUtilsImpl" />
+	
+	<bean id="serverToClientObjectFactory" class="com.ndg.multiplayer.basedemo.client.ObjectFactoryEx">
+		<property name="messageFactory" ref="messageFactory" />
+	</bean>
+	
+	<bean id="demoClient" class="com.ndg.multiplayer.basedemo.client.MultiplayerDemoClient" init-method="start">
+		<property name="clientToServerContext" ref="clientToServerJaxbContext" />
+		<property name="serverToClientContext" ref="serverToClientJaxbContext" />
+		<property name="serverToClientContextFactoryArray">
+			<array>
+				<ref bean="serverToClientObjectFactory" />
+			</array>
+		</property>
+		<property name="serverAddress" value="localhost" />
+		<property name="serverPort" value="18999" />
+		<property name="conversationTag" value="MultiplayerBaseDemo" />
+		<property name="compress" value="true" />
+		<property name="decompress" value="true" />
+		<property name="processMessagesOnSwingEventDispatcherThread" value="true" />
+		<property name="utils" ref="utils" />
+	</bean>
+	
+	<!-- Message prototypes -->
+	
+	<bean id="dateTimeResponseMessage" class="com.ndg.multiplayer.basedemo.client.DateTimeResponseEx" scope="prototype">
+		<property name="client" ref="demoClient" />
+	</bean>
+
+	<bean id="totalSoFarMessage" class="com.ndg.multiplayer.basedemo.client.TotalSoFarEx" scope="prototype">
+		<property name="client" ref="demoClient" />
+	</bean>
+
+	<bean id="pauseResponseMessage" class="com.ndg.multiplayer.basedemo.client.PauseResponseEx" scope="prototype">
+		<property name="client" ref="demoClient" />
+	</bean>
+
+	<bean id="counterResponseMessage" class="com.ndg.multiplayer.basedemo.client.CounterResponseEx" scope="prototype">
+		<property name="client" ref="demoClient" />
+	</bean>
+
+	<bean id="messageFactory" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="com.ndg.multiplayer.basedemo.client.MessageFactory" />
+	</bean>
+
+</beans>

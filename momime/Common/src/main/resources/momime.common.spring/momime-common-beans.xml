@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd" >
+
+	<!-- Common beans used both by the MoM IME client and server -->
+	
+	<bean id="clientToServerJaxbContext" class="jakarta.xml.bind.JAXBContext" factory-method="newInstance">
+		<constructor-arg>
+    		<list>
+    			<value>com.ndg.multiplayer.base.ClientToServerMessage</value>
+    			<value>com.ndg.multiplayer.sessionbase.CreateAccount</value>
+    			<value>com.ndg.multiplayer.sessionbase.Login</value>
+    			<value>com.ndg.multiplayer.sessionbase.Logout</value>
+    			<value>com.ndg.multiplayer.sessionbase.RequestSessionList</value>
+    			<value>com.ndg.multiplayer.sessionbase.NewSession</value>
+    			<value>com.ndg.multiplayer.sessionbase.JoinSession</value>
+    			<value>com.ndg.multiplayer.sessionbase.LeaveSession</value>
+
+    			<value>com.ndg.multiplayer.sessionbase.BrowseSavedGames</value>
+    			<value>com.ndg.multiplayer.sessionbase.BrowseSavePoints</value>
+    			<value>com.ndg.multiplayer.sessionbase.LoadGame</value>
+    			<value>com.ndg.multiplayer.sessionbase.DeleteSavedGame</value>
+
+    			<!-- MoM multiplayer structures -->
+    			<value>momime.common.messages.MomSessionDescription</value>
+
+				<!-- MoM multiplayer messages -->
+    			<value>momime.common.messages.clienttoserver.AlchemyMessage</value>
+    			<value>momime.common.messages.clienttoserver.CancelPendingMovementAndSpecialOrdersMessage</value>
+    			<value>momime.common.messages.clienttoserver.CancelTargetSpellMessage</value>
+    			<value>momime.common.messages.clienttoserver.CaptureCityDecisionMessage</value>
+    			<value>momime.common.messages.clienttoserver.ChangeCityConstructionMessage</value>
+    			<value>momime.common.messages.clienttoserver.ChangeOptionalFarmersMessage</value>
+    			<value>momime.common.messages.clienttoserver.ChangeTaxRateMessage</value>
+    			<value>momime.common.messages.clienttoserver.ChatMessage</value>
+    			<value>momime.common.messages.clienttoserver.ChooseCityNameMessage</value>
+    			<value>momime.common.messages.clienttoserver.ChooseCustomFlagColourMessage</value>
+    			<value>momime.common.messages.clienttoserver.ChooseCustomPicksMessage</value>
+    			<value>momime.common.messages.clienttoserver.ChooseInitialSpellsMessage</value>
+    			<value>momime.common.messages.clienttoserver.ChooseRaceMessage</value>
+    			<value>momime.common.messages.clienttoserver.ChooseStandardPhotoMessage</value>
+    			<value>momime.common.messages.clienttoserver.ChooseWizardMessage</value>
+    			<value>momime.common.messages.clienttoserver.CombatAutoControlMessage</value>
+    			<value>momime.common.messages.clienttoserver.DismissUnitMessage</value>
+    			<value>momime.common.messages.clienttoserver.EndCombatTurnMessage</value>
+    			<value>momime.common.messages.clienttoserver.NextTurnButtonMessage</value>
+    			<value>momime.common.messages.clienttoserver.RequestCastSpellMessage</value>
+    			<value>momime.common.messages.clienttoserver.RequestMoveCombatUnitMessage</value>
+    			<value>momime.common.messages.clienttoserver.RequestMoveOverlandUnitStackMessage</value>
+    			<value>momime.common.messages.clienttoserver.RequestResearchSpellMessage</value>
+    			<value>momime.common.messages.clienttoserver.RequestSwitchOffMaintainedSpellMessage</value>
+    			<value>momime.common.messages.clienttoserver.RequestUpdateUnitNameMessage</value>
+    			<value>momime.common.messages.clienttoserver.RushBuyMessage</value>
+    			<value>momime.common.messages.clienttoserver.SellBuildingMessage</value>
+    			<value>momime.common.messages.clienttoserver.SpecialOrderButtonMessage</value>
+    			<value>momime.common.messages.clienttoserver.TargetSpellMessage</value>
+    			<value>momime.common.messages.clienttoserver.UpdateMagicPowerDistributionMessage</value>
+    			<value>momime.common.messages.clienttoserver.UploadCustomPhotoMessage</value>
+    			<value>momime.common.messages.clienttoserver.RequestMoveHeroItemMessage</value>
+    			<value>momime.common.messages.clienttoserver.RequestRemoveQueuedSpellMessage</value>
+    			<value>momime.common.messages.clienttoserver.RequestAcceptOfferMessage</value>
+    			<value>momime.common.messages.clienttoserver.RequestDiplomacyMessage</value>
+    			<value>momime.common.messages.clienttoserver.RequestFleeCombatMessage</value>
+    		</list>
+   		</constructor-arg>
+	</bean>
+
+	<bean id="serverToClientJaxbContext" class="jakarta.xml.bind.JAXBContext" factory-method="newInstance">
+		<constructor-arg>
+    		<list>
+    			<value>com.ndg.multiplayer.base.ServerToClientMessage</value>
+    			<value>com.ndg.multiplayer.sessionbase.CreateAccountSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.CreateAccountFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.LoginSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.LoginFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.LogoutSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.LogoutFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.RequestSessionListSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.RequestSessionListFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.JoinSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.JoinFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.PlayerLeft</value>
+    			<value>com.ndg.multiplayer.sessionbase.AdditionalPlayerJoined</value>
+    			<value>com.ndg.multiplayer.sessionbase.SessionEnding</value>
+    			<value>com.ndg.multiplayer.sessionbase.KickedByAnotherLogin</value>
+    			<value>com.ndg.multiplayer.sessionbase.LeaveSessionFailed</value>
+    			
+    			<value>com.ndg.multiplayer.sessionbase.BrowseSavedGamesSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.BrowseSavedGamesFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.BrowseSavePointsSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.BrowseSavePointsFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.LoadGameFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.DeleteSavedGameSuccessful</value>
+    			<value>com.ndg.multiplayer.sessionbase.DeleteSavedGameFailed</value>
+    			<value>com.ndg.multiplayer.sessionbase.UpdateHumanPlayerToAI</value>
+    			
+    			<!-- MoM multiplayer structures -->
+    			<value>momime.common.messages.MomSessionDescription</value>
+    			<value>momime.common.messages.MomGeneralPublicKnowledge</value>
+    			<value>momime.common.messages.MomPersistentPlayerPrivateKnowledge</value>
+    			<value>momime.common.messages.MomTransientPlayerPrivateKnowledge</value>
+    			<value>momime.common.messages.MomTransientPlayerPublicKnowledge</value>
+
+				<!-- MoM multiplayer messages -->
+    			<value>momime.common.messages.servertoclient.AddNewTurnMessagesMessage</value>
+    			<value>momime.common.messages.servertoclient.ApplyDamageMessage</value>
+    			<value>momime.common.messages.servertoclient.AskForCaptureCityDecisionMessage</value>
+    			<value>momime.common.messages.servertoclient.BroadcastChatMessage</value>
+    			<value>momime.common.messages.servertoclient.ChooseInitialSpellsNowMessage</value>
+    			<value>momime.common.messages.servertoclient.ChooseYourRaceNowMessage</value>
+    			<value>momime.common.messages.servertoclient.MeetWizardMessage</value>
+    			<value>momime.common.messages.servertoclient.CombatEndedMessage</value>
+    			<value>momime.common.messages.servertoclient.DamageCalculationMessage</value>
+    			<value>momime.common.messages.servertoclient.EndOfContinuedMovementMessage</value>
+    			<value>momime.common.messages.servertoclient.ErasePendingMovementsMessage</value>
+    			<value>momime.common.messages.servertoclient.FullSpellListMessage</value>
+    			<value>momime.common.messages.servertoclient.MoveUnitInCombatMessage</value>
+    			<value>momime.common.messages.servertoclient.MoveUnitStackOverlandMessage</value>
+    			<value>momime.common.messages.servertoclient.PlaneShiftUnitStackMessage</value>
+    			<value>momime.common.messages.servertoclient.NewGameDatabaseMessage</value>
+    			<value>momime.common.messages.servertoclient.OnePlayerSimultaneousTurnDoneMessage</value>
+    			<value>momime.common.messages.servertoclient.OverlandCastQueuedMessage</value>
+    			<value>momime.common.messages.servertoclient.PendingMovementMessage</value>
+    			<value>momime.common.messages.servertoclient.PendingSaleMessage</value>
+    			<value>momime.common.messages.servertoclient.RemoveQueuedSpellMessage</value>
+    			<value>momime.common.messages.servertoclient.ReplacePicksMessage</value>
+    			<value>momime.common.messages.servertoclient.SelectNextUnitToMoveOverlandMessage</value>
+    			<value>momime.common.messages.servertoclient.SetCombatPlayerMessage</value>
+    			<value>momime.common.messages.servertoclient.SetCurrentPlayerMessage</value>
+    			<value>momime.common.messages.servertoclient.SetUnitIntoOrTakeUnitOutOfCombatMessage</value>
+    			<value>momime.common.messages.servertoclient.SpellResearchChangedMessage</value>
+    			<value>momime.common.messages.servertoclient.StartCombatMessage</value>
+    			<value>momime.common.messages.servertoclient.UpdateCombatMapMessage</value>
+    			<value>momime.common.messages.servertoclient.StartGameMessage</value>
+    			<value>momime.common.messages.servertoclient.StartSimultaneousTurnMessage</value>
+    			<value>momime.common.messages.servertoclient.TaxRateChangedMessage</value>
+    			<value>momime.common.messages.servertoclient.TextPopupMessage</value>
+    			<value>momime.common.messages.servertoclient.UpdateGlobalEconomyMessage</value>
+    			<value>momime.common.messages.servertoclient.UpdateManaSpentOnCastingCurrentSpellMessage</value>
+    			<value>momime.common.messages.servertoclient.UpdateRemainingResearchCostMessage</value>
+    			<value>momime.common.messages.servertoclient.YourPhotoIsOkMessage</value>
+    			<value>momime.common.messages.servertoclient.YourFlagColourIsOkMessage</value>
+    			<value>momime.common.messages.servertoclient.YourRaceIsOkMessage</value>
+    			<value>momime.common.messages.servertoclient.AddUnassignedHeroItemMessage</value>
+    			<value>momime.common.messages.servertoclient.RemoveUnassignedHeroItemMessage</value>
+    			<value>momime.common.messages.servertoclient.TreasureRewardMessage</value>
+    			<value>momime.common.messages.servertoclient.DispelMagicResultsMessage</value>
+    			<value>momime.common.messages.servertoclient.CounterMagicResultsMessage</value>
+    			<value>momime.common.messages.servertoclient.ShowSpellAnimationMessage</value>
+    			<value>momime.common.messages.servertoclient.UpdateWizardStateMessage</value>
+    			<value>momime.common.messages.servertoclient.AddPowerBaseHistoryMessage</value>
+    			<value>momime.common.messages.servertoclient.PlayAnimationMessage</value>
+    			<value>momime.common.messages.servertoclient.OfferAcceptedMessage</value>
+    			<value>momime.common.messages.servertoclient.UpdateTurnPhaseMessage</value>
+    			<value>momime.common.messages.servertoclient.OverlandCastingInfoMessage</value>
+    			<value>momime.common.messages.servertoclient.RandomEventMessage</value>
+    			<value>momime.common.messages.servertoclient.DiplomacyMessage</value>
+    			<value>momime.common.messages.servertoclient.PactMessage</value>
+    			<value>momime.common.messages.servertoclient.TradeableSpellsMessage</value>
+
+				<!-- FoW messages -->
+    			<value>momime.common.messages.servertoclient.UpdateTerrainMessage</value>
+    			<value>momime.common.messages.servertoclient.UpdateCityMessage</value>
+    			<value>momime.common.messages.servertoclient.AddBuildingMessage</value>
+    			<value>momime.common.messages.servertoclient.DestroyBuildingMessage</value>
+    			<value>momime.common.messages.servertoclient.AddOrUpdateUnitMessage</value>
+    			<value>momime.common.messages.servertoclient.KillUnitMessage</value>
+    			<value>momime.common.messages.servertoclient.AddOrUpdateMaintainedSpellMessage</value>
+    			<value>momime.common.messages.servertoclient.SwitchOffMaintainedSpellMessage</value>
+    			<value>momime.common.messages.servertoclient.AddOrUpdateCombatAreaEffectMessage</value>
+    			<value>momime.common.messages.servertoclient.CancelCombatAreaEffectMessage</value>
+    			<value>momime.common.messages.servertoclient.FogOfWarVisibleAreaChangedMessage</value>
+    		</list>
+   		</constructor-arg>
+	</bean>
+
+	<!-- General XSD objects -->
+	
+	<bean id="domImplementationRegistry" class="org.w3c.dom.bootstrap.DOMImplementationRegistry" factory-method="newInstance" />
+	
+	<bean id="commonXsdResourceResolver" class="momime.common.database.CommonXsdResourceResolver">
+		<constructor-arg ref="domImplementationRegistry" />
+	</bean>
+	
+	<bean id="schemaFactoryFactory" class="com.ndg.utils.SchemaFactoryFactory" />
+	
+	<bean id="schemaFactory" class="javax.xml.validation.SchemaFactory" factory-bean="schemaFactoryFactory" factory-method="createSchemaFactory">
+		<constructor-arg ref="commonXsdResourceResolver" />
+	</bean>
+	
+	<!-- Common database XMLs -->
+
+	<bean id="commonDatabaseSchema" class="javax.xml.validation.Schema" factory-bean="schemaFactory" factory-method="newSchema">
+		<constructor-arg type="java.net.URL" value="/momime.common.database/MoMIMECommonDatabase.xsd" />
+	</bean>
+	
+	<bean id="commonDatabaseJaxbContext" class="jakarta.xml.bind.JAXBContext" factory-method="newInstance">
+		<constructor-arg>
+    		<list>
+    			<value>momime.common.database.MomDatabase</value>
+    		</list>
+   		</constructor-arg>
+	</bean>
+
+	<bean id="commonDatabaseFactory" class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" >
+		<property name="serviceLocatorInterface" value="momime.common.database.CommonDatabaseFactory" />
+	</bean>			
+
+	<bean id="commonDatabaseObjectFactory" class="momime.common.database.CommonDatabaseObjectFactory">
+		<property name="factory" ref="commonDatabaseFactory" />
+	</bean>
+	
+	<bean id="commonDatabaseUnmarshaller" class="jakarta.xml.bind.Unmarshaller" factory-bean="commonDatabaseJaxbContext" factory-method="createUnmarshaller">
+		<property name="schema" ref="commonDatabaseSchema" />
+	</bean>
+	
+	<bean id="configureCommonDatabaseUnmarshaller" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetObject" ref="commonDatabaseUnmarshaller" />
+		<property name="targetMethod" value="setProperty" />
+		<property name="arguments">
+			<list>
+				 <value>org.glassfish.jaxb.core.ObjectFactory</value>
+				<array>
+					<ref bean="commonDatabaseObjectFactory" />
+				</array>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="commonDatabase" class="momime.common.database.CommonDatabaseImpl" scope="prototype">
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="utils" ref="uiUtils" />
+	</bean>
+	
+	<bean id="wizardEx" class="momime.common.database.WizardEx" scope="prototype">
+		<property name="randomUtils" ref="randomUtils" />
+	</bean>
+
+	<bean id="mapFeatureEx" class="momime.common.database.MapFeatureEx" scope="prototype">
+		<property name="utils" ref="uiUtils" />
+	</bean>
+
+	<bean id="tileSetEx" class="momime.common.database.TileSetEx" scope="prototype">
+		<property name="utils" ref="uiUtils" />
+	</bean>
+
+	<bean id="smoothedTileTypeEx" class="momime.common.database.SmoothedTileTypeEx" scope="prototype">
+		<property name="randomUtils" ref="randomUtils" />
+	</bean>
+
+	<bean id="animation" class="momime.common.database.AnimationEx" scope="prototype">
+		<property name="utils" ref="uiUtils" />
+	</bean>
+	
+	<!-- Common beans -->	
+
+	<bean id="uiUtils" class="com.ndg.utils.swing.NdgUIUtilsImpl" />
+
+	<bean id="objectFactoryMap" class="com.ndg.map.coordinates.ObjectFactoryMap" />	<!-- Creates Ex versions of coordinates -->
+
+	<bean id="booleanMapAreaOperations2D" class="com.ndg.map.areas.operations.BooleanMapAreaOperations2DImpl">
+		<property name="randomUtils" ref="randomUtils" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+	</bean>
+
+	<bean id="knownWizardUtils" class="momime.common.utils.KnownWizardUtilsImpl" />
+
+	<bean id="cityProductionUtils" class="momime.common.utils.CityProductionUtilsImpl" />
+
+	<bean id="cityCalculations" class="momime.common.calculations.CityCalculationsImpl">
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="booleanMapAreaOperations2D" ref="booleanMapAreaOperations2D" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="cityProductionCalculations" ref="cityProductionCalculations" />
+		<property name="cityProductionUtils" ref="cityProductionUtils" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+
+	<bean id="cityProductionCalculations" class="momime.common.calculations.CityProductionCalculationsImpl">
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="cityCalculations" ref="cityCalculations" />
+		<property name="cityProductionUtils" ref="cityProductionUtils" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+	
+	<bean id="skillCalculations" class="momime.common.calculations.SkillCalculationsImpl" />
+	
+	<bean id="spellCalculations" class="momime.common.calculations.SpellCalculationsImpl">
+		<property name="spellUtils" ref="spellUtils" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+	</bean>
+	
+	<bean id="unitCalculations" class="momime.common.calculations.UnitCalculationsImpl">
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+	</bean>
+
+	<bean id="memoryBuildingUtils" class="momime.common.utils.MemoryBuildingUtilsImpl" />
+	
+	<bean id="memoryCombatAreaEffectUtils" class="momime.common.utils.MemoryCombatAreaEffectUtilsImpl" />
+	
+	<bean id="memoryGridCellUtils" class="momime.common.utils.MemoryGridCellUtilsImpl" />
+
+	<bean id="playerKnowledgeUtils" class="momime.common.utils.PlayerKnowledgeUtilsImpl" />
+	
+	<bean id="memoryMaintainedSpellUtils" class="momime.common.utils.MemoryMaintainedSpellUtilsImpl" />
+	
+	<bean id="spellTargetingUtils" class="momime.common.utils.SpellTargetingUtilsImpl">
+		<property name="spellUtils" ref="spellUtils" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="kindOfSpellUtils" ref="kindOfSpellUtils" />
+		<property name="resourceValueUtils" ref="resourceValueUtils" />
+		<property name="memoryGridCellUtils" ref="memoryGridCellUtils" />
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="sampleUnitUtils" ref="sampleUnitUtils" />
+		<property name="combatMapUtils" ref="combatMapUtils" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="unitVisibilityUtils" ref="unitVisibilityUtils" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+	</bean>
+	
+	<bean id="playerPickUtils" class="momime.common.utils.PlayerPickUtilsImpl" />
+	
+	<bean id="resourceValueUtils" class="momime.common.utils.ResourceValueUtilsImpl">
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="skillCalculations" ref="skillCalculations" />
+		<property name="spellCalculations" ref="spellCalculations" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+	</bean>
+	
+	<bean id="spellUtils" class="momime.common.utils.SpellUtilsImpl">
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="spellCalculations" ref="spellCalculations" />
+		<property name="heroItemCalculations" ref="heroItemCalculations" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+	</bean>
+	
+	<bean id="unitDetailsUtils" class="momime.common.utils.UnitDetailsUtilsImpl">
+		<property name="playerPickUtils" ref="playerPickUtils" />
+		<property name="memoryCombatAreaEffectUtils" ref="memoryCombatAreaEffectUtils" />
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+
+	<bean id="expandUnitDetailsUtils" class="momime.common.utils.ExpandUnitDetailsUtilsImpl">
+		<property name="unitDetailsUtils" ref="unitDetailsUtils" />
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="playerPickUtils" ref="playerPickUtils" />
+	</bean>
+
+	<bean id="expandUnitDetails" class="momime.common.utils.ExpandUnitDetailsImpl">
+		<property name="expandUnitDetailsUtils" ref="expandUnitDetailsUtils" />
+		<property name="unitUtils" ref="unitUtils" />
+	</bean>
+	
+	<bean id="unitUtils" class="momime.common.utils.UnitUtilsImpl">
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="unitVisibilityUtils" ref="unitVisibilityUtils" />
+	</bean>
+	
+	<bean id="unitVisibilityUtils" class="momime.common.utils.UnitVisibilityUtilsImpl">
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+	</bean>
+	
+	<bean id="combatMapUtils" class="momime.common.utils.CombatMapUtilsImpl">
+		<property name="multiplayerSessionUtils" ref="multiplayerSessionUtils" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+	</bean>
+
+	<bean id="pendingMovementUtils" class="momime.common.utils.PendingMovementUtilsImpl" />
+
+	<bean id="randomUtils" class="com.ndg.utils.random.RandomUtilsImpl" />
+	
+	<bean id="coordinateSystemUtils" class="com.ndg.map.CoordinateSystemUtilsImpl" />
+	
+	<bean id="booleanMapAreaOperations3D" class="com.ndg.map.areas.operations.BooleanMapAreaOperations3DImpl">
+		<property name="randomUtils" ref="randomUtils" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="booleanMapAreaOperations2D" ref="booleanMapAreaOperations2D" />
+	</bean>
+
+	<bean id="zoneAI" class="momime.common.ai.ZoneAIImpl">
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+	</bean>
+
+	<bean id="heroItemUtils" class="momime.common.utils.HeroItemUtilsImpl" />
+
+	<bean id="heroItemCalculations" class="momime.common.calculations.HeroItemCalculationsImpl">
+		<property name="playerPickUtils" ref="playerPickUtils" />
+	</bean>
+
+	<bean id="unitMovement" class="momime.common.movement.UnitMovementImpl">
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="memoryGridCellUtils" ref="memoryGridCellUtils" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="movementUtils" ref="movementUtils" />
+		<property name="unitVisibilityUtils" ref="unitVisibilityUtils" />
+		<property name="combatMapUtils" ref="combatMapUtils" />
+	</bean>
+
+	<bean id="kindOfSpellUtils" class="momime.common.utils.KindOfSpellUtilsImpl" />
+
+	<bean id="sampleUnitUtils" class="momime.common.utils.SampleUnitUtilsImpl">
+		<property name="unitUtils" ref="unitUtils" />
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="memoryBuildingUtils" ref="memoryBuildingUtils" />
+		<property name="unitCalculations" ref="unitCalculations" />
+	</bean>
+
+	<bean id="movementUtils" class="momime.common.movement.MovementUtilsImpl">
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+		<property name="unitCalculations" ref="unitCalculations" />
+		<property name="memoryGridCellUtils" ref="memoryGridCellUtils" />
+		<property name="memoryMaintainedSpellUtils" ref="memoryMaintainedSpellUtils" />
+		<property name="coordinateSystemUtils" ref="coordinateSystemUtils" />
+		<property name="unitMovement" ref="unitMovement" />
+		<property name="combatMapUtils" ref="combatMapUtils" />
+		<property name="playerKnowledgeUtils" ref="playerKnowledgeUtils" />
+		<property name="knownWizardUtils" ref="knownWizardUtils" />
+	</bean>
+	
+	<bean id="combatFleeUtils" class="momime.common.utils.CombatFleeUtilsImpl">
+		<property name="expandUnitDetails" ref="expandUnitDetails" />
+	</bean>
+	
+</beans>

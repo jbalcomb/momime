@@ -1,0 +1,71 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.ndg.common</groupId>
+	<artifactId>xmleditor</artifactId>
+	<version>0.8.0</version>
+	<name>ndgXmlEditor</name>
+	<description>XML editor</description>
+
+	<scm>
+		<connection>scm:git:ssh://nigelgay@git.code.sf.net/p/momime/xmleditor</connection>
+		<tag>xmleditor-0.8.0</tag>
+	</scm>
+
+	<parent>
+		<groupId>com.ndg.common</groupId>
+		<artifactId>parent</artifactId>
+		<version>0.8.0</version>
+	</parent>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>com.evolvedbinary.maven.jvnet</groupId>
+				<artifactId>jaxb30-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>main-xjc-generate</id>
+						<phase>generate-sources</phase>
+						<goals><goal>generate</goal></goals>
+						<configuration>
+							<schemaDirectory>src/main/resources/com.ndg.xmleditor.schema</schemaDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.jdom</groupId>
+			<artifactId>jdom2</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.ndg.common</groupId>
+			<artifactId>ndgutils</artifactId>
+			<version>0.8.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.lgooddatepicker</groupId>
+			<artifactId>LGoodDatePicker</artifactId>
+		</dependency>		
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+		</dependency>
+	</dependencies>
+
+</project>

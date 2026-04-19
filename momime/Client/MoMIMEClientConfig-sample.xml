@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config:momImeClientConfig xmlns:config="http://momime/client/config">
+	<compressDataSentToServer>true</compressDataSentToServer>
+	<decompressDataReceivedFromServer>true</decompressDataReceivedFromServer>
+	<graphicsXmlFilename>client/graphics/Graphics.momime.xml</graphicsXmlFilename>
+    <languagesXmlFilename>client/languages/Languages.momime.xml</languagesXmlFilename>
+	<chosenLanguage>en</chosenLanguage>
+	<consistencyCheckLevel>0</consistencyCheckLevel>
+    <overlandUpscaledTerrain>false</overlandUpscaledTerrain>
+    <overlandUpscaledUnits>false</overlandUpscaledUnits>
+    <combatUpscaledTerrain>false</combatUpscaledTerrain>
+    <combatUpscaledUnits>false</combatUpscaledUnits>
+    <cityViewUpscaledCivilians>false</cityViewUpscaledCivilians>
+	<overlandSmoothTerrain>true</overlandSmoothTerrain>
+	<overlandSmoothTextures>false</overlandSmoothTextures>
+	<overlandShowPartialFogOfWar>true</overlandShowPartialFogOfWar>
+	<overlandSmoothFogOfWar>true</overlandSmoothFogOfWar>
+	<overlandShowOurBorder>false</overlandShowOurBorder>
+	<overlandShowEnemyBorders>false</overlandShowEnemyBorders>
+	<overlandAnimateUnitsMoving>true</overlandAnimateUnitsMoving>
+	<combatSmoothTerrain>true</combatSmoothTerrain>
+	<newShadows>true</newShadows>
+	<showHeroPortraits>true</showHeroPortraits>
+	<displayUnitSkillsAsAttributes>A</displayUnitSkillsAsAttributes>
+    <spellBookViewMode>STANDARD</spellBookViewMode>
+	<debugShowURNs>false</debugShowURNs>
+	<debugShowEdgesOfMap>false</debugShowEdgesOfMap>
+</config:momImeClientConfig>
