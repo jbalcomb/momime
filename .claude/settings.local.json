@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(chmod +x:*)",
+      "Bash(reg query:*)",
+      "Bash(curl:*)",
+      "Bash(../mvnw clean:*)",
+      "Bash(../mvnw install:*)",
+      "Bash(echo JAVA_HOME=$JAVA_HOME:*)",
+      "Bash(export:*)",
+      "Bash(python -c ' *)"
+    ]
+  }
+}

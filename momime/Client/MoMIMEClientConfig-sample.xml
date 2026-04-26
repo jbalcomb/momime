@@ -6,13 +6,13 @@
     <languagesXmlFilename>client/languages/Languages.momime.xml</languagesXmlFilename>
 	<chosenLanguage>en</chosenLanguage>
 	<consistencyCheckLevel>0</consistencyCheckLevel>
-    <overlandUpscaledTerrain>false</overlandUpscaledTerrain>
-    <overlandUpscaledUnits>false</overlandUpscaledUnits>
-    <combatUpscaledTerrain>false</combatUpscaledTerrain>
-    <combatUpscaledUnits>false</combatUpscaledUnits>
-    <cityViewUpscaledCivilians>false</cityViewUpscaledCivilians>
+    <overlandUpscaledTerrain>true</overlandUpscaledTerrain>
+    <overlandUpscaledUnits>true</overlandUpscaledUnits>
+    <combatUpscaledTerrain>true</combatUpscaledTerrain>
+    <combatUpscaledUnits>true</combatUpscaledUnits>
+    <cityViewUpscaledCivilians>true</cityViewUpscaledCivilians>
 	<overlandSmoothTerrain>true</overlandSmoothTerrain>
-	<overlandSmoothTextures>false</overlandSmoothTextures>
+	<overlandSmoothTextures>true</overlandSmoothTextures>
 	<overlandShowPartialFogOfWar>true</overlandShowPartialFogOfWar>
 	<overlandSmoothFogOfWar>true</overlandSmoothFogOfWar>
 	<overlandShowOurBorder>false</overlandShowOurBorder>

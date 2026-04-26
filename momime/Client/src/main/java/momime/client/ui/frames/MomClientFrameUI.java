@@ -1,14 +1,31 @@
 package momime.client.ui.frames;
 
+import java.awt.AWTEvent;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsEnvironment;
+import java.awt.Insets;
 import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.awt.geom.AffineTransform;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.io.File;
 import java.io.IOException;
 
+import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JLayer;
+import javax.swing.SwingUtilities;
+import javax.swing.plaf.LayerUI;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -89,7 +106,13 @@ public abstract class MomClientFrameUI extends LanguageVariableUIImpl
 			init ();
 			languageChanged ();
 			getLanguageChangeMaster ().addLanguageChangeListener (this);
-			
+
+			// If the preferred content size won't fit on the current screen (e.g. with -Dsun.java2d.uiScale>1
+			// on a small display), force the frame to be decorated and resizable, and cap the content pane
+			// size. Otherwise the title bar + window controls end up off-screen and the user has no way to
+			// move or close the window.
+			fitFrameToScreen ();
+
 			// If the window isn't resizeable, then hide the window border
 			// but this means it has no title bar to enable it to be moved, so also set up dragging the background for it
 			if (!frame.isResizable ())
@@ -223,6 +246,255 @@ public abstract class MomClientFrameUI extends LanguageVariableUIImpl
 		frame.setVisible (v);
 	}
 	
+	/**
+	 * If the preferred content size won't fit on the primary screen, wrap the content pane in a
+	 * scaling JLayer so it shrinks uniformly (preserving aspect) to the limit of the horizontal or
+	 * vertical desktop resolution. Mouse/wheel events are re-dispatched through the inverse scale
+	 * so hit-testing still hits the original components.
+	 */
+	private final void fitFrameToScreen ()
+	{
+		GraphicsConfiguration gc = frame.getGraphicsConfiguration ();
+		if (gc == null)
+			gc = GraphicsEnvironment.getLocalGraphicsEnvironment ().getDefaultScreenDevice ().getDefaultConfiguration ();
+
+		// Normalize to logical pixels (the same units Swing uses for component sizes). Some JDK
+		// versions/platforms return device pixels from getBounds()/getScreenInsets() when
+		// sun.java2d.uiScale is set; dividing by the GC's transform scale gives logical pixels in
+		// every case. When uiScale is unset the transform scale is 1.0 and this is a no-op.
+		final AffineTransform tx = gc.getDefaultTransform ();
+		final double sx = tx.getScaleX () > 0 ? tx.getScaleX () : 1.0;
+		final double sy = tx.getScaleY () > 0 ? tx.getScaleY () : 1.0;
+
+		final Rectangle screenBounds = gc.getBounds ();
+		final Insets screenInsets = Toolkit.getDefaultToolkit ().getScreenInsets (gc);
+
+		// If getBounds() already returns logical pixels (Linux/Mac, some JDK versions on Windows),
+		// the screen bounds will be much smaller than the toolkit screen size — heuristically
+		// detect this by comparing against Toolkit.getScreenSize.
+		final Dimension toolkitScreen = Toolkit.getDefaultToolkit ().getScreenSize ();
+		final boolean boundsAreLogical = (Math.abs (screenBounds.width - toolkitScreen.width) < 4)
+			&& (Math.abs (screenBounds.height - toolkitScreen.height) < 4)
+			&& (sx > 1.0);
+		final double divX = boundsAreLogical ? 1.0 : sx;
+		final double divY = boundsAreLogical ? 1.0 : sy;
+
+		final int logicalScreenW = (int) (screenBounds.width  / divX);
+		final int logicalScreenH = (int) (screenBounds.height / divY);
+		final int logicalInsetL  = (int) (screenInsets.left   / divX);
+		final int logicalInsetR  = (int) (screenInsets.right  / divX);
+		final int logicalInsetT  = (int) (screenInsets.top    / divY);
+		final int logicalInsetB  = (int) (screenInsets.bottom / divY);
+		final int availW = logicalScreenW - logicalInsetL - logicalInsetR;
+		final int availH = logicalScreenH - logicalInsetT - logicalInsetB;
+
+		// Reserve room for a title bar (~32px) and side/bottom borders in case the frame is decorated
+		final int decorationH = 40;
+		final int decorationW = 16;
+		final int maxContentW = availW - decorationW;
+		final int maxContentH = availH - decorationH;
+
+		final Container content = frame.getContentPane ();
+		final Dimension pref = content.getPreferredSize ();
+		final int prefW = (pref != null) ? pref.width : 0;
+		final int prefH = (pref != null) ? pref.height : 0;
+
+		log.info ("fitFrameToScreen " + getClass ().getSimpleName ()
+			+ ": pref=" + prefW + "x" + prefH
+			+ " gcBounds=" + screenBounds.width + "x" + screenBounds.height
+			+ " insets=L" + screenInsets.left + "/R" + screenInsets.right + "/T" + screenInsets.top + "/B" + screenInsets.bottom
+			+ " gcScale=" + sx + "x" + sy
+			+ " toolkitScreen=" + toolkitScreen.width + "x" + toolkitScreen.height
+			+ " boundsAreLogical=" + boundsAreLogical
+			+ " avail=" + availW + "x" + availH
+			+ " maxContent=" + maxContentW + "x" + maxContentH);
+
+		if ((prefW <= 0) || (prefH <= 0))
+			return;
+
+		if ((prefW <= maxContentW) && (prefH <= maxContentH))
+			return;
+
+		final double scale = Math.min ((double) maxContentW / prefW, (double) maxContentH / prefH);
+		if (scale >= 1.0)
+			return;
+
+		if (!(content instanceof JComponent))
+		{
+			log.warn ("Cannot scale frame " + getClass ().getSimpleName () + ": content pane is not a JComponent");
+			return;
+		}
+
+		final JComponent view = (JComponent) content;
+		view.setPreferredSize (new Dimension (prefW, prefH));
+		frame.setContentPane (new ScalingHostPanel (view, scale));
+
+		log.info ("Scaling frame " + getClass ().getSimpleName () + " by " + String.format ("%.3f", scale)
+			+ " to fit content " + prefW + "x" + prefH + " into " + maxContentW + "x" + maxContentH);
+	}
+
+	/**
+	 * Content-pane wrapper that hosts a {@link JLayer} sized at its view's natural (unscaled)
+	 * dimensions, while reporting a scaled preferred size to its parent and applying the uniform
+	 * scale during paint. Mouse coordinate translation is handled by {@link ScalingLayerUI}.
+	 */
+	private static final class ScalingHostPanel extends javax.swing.JPanel
+	{
+		private static final long serialVersionUID = 1L;
+
+		private final double scale;
+		private final JComponent view;
+		private final JLayer<JComponent> layer;
+
+		ScalingHostPanel (final JComponent v, final double s)
+		{
+			super (null);
+			this.scale = s;
+			this.view = v;
+			this.layer = new JLayer<> (v, new ScalingLayerUI (s));
+			setOpaque (false);
+			add (layer);
+		}
+
+		private Dimension scaled (final Dimension d)
+		{
+			if (d == null)
+				return null;
+			return new Dimension ((int) Math.ceil (d.width * scale), (int) Math.ceil (d.height * scale));
+		}
+
+		@Override
+		public Dimension getPreferredSize ()
+		{
+			return scaled (view.getPreferredSize ());
+		}
+
+		@Override
+		public Dimension getMinimumSize ()
+		{
+			return scaled (view.getMinimumSize ());
+		}
+
+		@Override
+		public void doLayout ()
+		{
+			// JLayer (and the view inside it) is laid out at its natural unscaled size; the scale
+			// transform in paint() shrinks it visually to fit our (smaller) bounds.
+			final Dimension p = view.getPreferredSize ();
+			layer.setBounds (0, 0, p.width, p.height);
+		}
+
+		@Override
+		public void paint (final Graphics g)
+		{
+			final Graphics2D g2 = (Graphics2D) g.create ();
+			g2.scale (scale, scale);
+			super.paint (g2);
+			g2.dispose ();
+		}
+	}
+
+	/**
+	 * LayerUI used purely for mouse event interception so children receive coordinates in their
+	 * natural (unscaled) space. The visual scale itself is applied by {@link ScalingHostPanel};
+	 * we don't apply it here as well or content would be scaled twice.
+	 */
+	private static final class ScalingLayerUI extends LayerUI<JComponent>
+	{
+		private static final long serialVersionUID = 1L;
+
+		private final double scale;
+
+		/** Re-entry guard: when we re-dispatch an event with translated coordinates, JLayer's
+		 * AWTEventListener fires again on the new event. Without this, every mouse event
+		 * recurses until the stack overflows. */
+		private boolean redispatching;
+
+		ScalingLayerUI (final double s)
+		{
+			this.scale = s;
+		}
+
+		@Override
+		public void installUI (final JComponent c)
+		{
+			super.installUI (c);
+			((JLayer<?>) c).setLayerEventMask (
+				AWTEvent.MOUSE_EVENT_MASK |
+				AWTEvent.MOUSE_MOTION_EVENT_MASK |
+				AWTEvent.MOUSE_WHEEL_EVENT_MASK);
+		}
+
+		@Override
+		public void uninstallUI (final JComponent c)
+		{
+			((JLayer<?>) c).setLayerEventMask (0);
+			super.uninstallUI (c);
+		}
+
+		@Override
+		protected void processMouseEvent (final MouseEvent e, final JLayer<? extends JComponent> l)
+		{
+			redispatch (e, l);
+		}
+
+		@Override
+		protected void processMouseMotionEvent (final MouseEvent e, final JLayer<? extends JComponent> l)
+		{
+			redispatch (e, l);
+		}
+
+		@Override
+		protected void processMouseWheelEvent (final MouseWheelEvent e, final JLayer<? extends JComponent> l)
+		{
+			redispatch (e, l);
+		}
+
+		private void redispatch (final MouseEvent e, final JLayer<? extends JComponent> l)
+		{
+			if (redispatching || e.isConsumed ())
+				return;
+
+			final Component view = l.getView ();
+			if (view == null)
+				return;
+
+			// Translate coordinates from the event source into the JLayer's space, then divide by
+			// scale to get the position in the unscaled view, then convert to the deepest target.
+			final Point inLayer = SwingUtilities.convertPoint (e.getComponent (), e.getPoint (), l);
+			final int viewX = (int) Math.round (inLayer.x / scale);
+			final int viewY = (int) Math.round (inLayer.y / scale);
+
+			Component target = SwingUtilities.getDeepestComponentAt (view, viewX, viewY);
+			if (target == null)
+				target = view;
+
+			final Point targetPt = SwingUtilities.convertPoint (view, viewX, viewY, target);
+
+			final MouseEvent newEvent;
+			if (e instanceof MouseWheelEvent we)
+				newEvent = new MouseWheelEvent (target, we.getID (), we.getWhen (), we.getModifiersEx (),
+					targetPt.x, targetPt.y, we.getXOnScreen (), we.getYOnScreen (),
+					we.getClickCount (), we.isPopupTrigger (),
+					we.getScrollType (), we.getScrollAmount (), we.getWheelRotation ());
+			else
+				newEvent = new MouseEvent (target, e.getID (), e.getWhen (), e.getModifiersEx (),
+					targetPt.x, targetPt.y, e.getXOnScreen (), e.getYOnScreen (),
+					e.getClickCount (), e.isPopupTrigger (), e.getButton ());
+
+			redispatching = true;
+			try
+			{
+				target.dispatchEvent (newEvent);
+			}
+			finally
+			{
+				redispatching = false;
+			}
+			e.consume ();
+		}
+	}
+
 	/**
 	 * @return Window position entry from config file for this frame, or null if not found
 	 */

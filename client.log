@@ -1,0 +1,38 @@
+[2026-04-26 09:46:45.213 INFO main] momime.client.graphics.database.GraphicsDatabaseExImpl:64 - Processing graphics XML file
+[2026-04-26 09:46:45.219 INFO main] momime.client.graphics.database.GraphicsDatabaseExImpl:75 - Skipped consistency check on graphics XML animations
+[2026-04-26 09:46:48.639 INFO main] momime.client.MomClientImpl:826 - Starting up UI
+[2026-04-26 09:46:50.422 INFO AWT-EventQueue-0] momime.client.ui.frames.MomClientFrameUI:302 - fitFrameToScreen MainMenuUI: pref=640x480 gcBounds=1067x600 insets=L0/R0/T0/B27 gcScale=1.5x1.5 toolkitScreen=1067x600 boundsAreLogical=true avail=1067x573 maxContent=1051x533
+[2026-04-26 09:51:26.249 INFO AWT-EventQueue-0] momime.client.ui.frames.MomClientFrameUI:302 - fitFrameToScreen ConnectToServerUI: pref=640x480 gcBounds=1067x600 insets=L0/R0/T0/B27 gcScale=1.5x1.5 toolkitScreen=1067x600 boundsAreLogical=true avail=1067x573 maxContent=1051x533
+[2026-04-26 09:51:43.765 INFO AWT-EventQueue-0] com.ndg.multiplayer.base.client.MultiplayerBaseClient:78 - Connecting to server "localhost" port 18250...
+[2026-04-26 09:51:43.918 INFO AWT-EventQueue-0] com.ndg.multiplayer.base.client.MultiplayerBaseClient:83 - Socket connected, starting up thread to listen for messages from server
+[2026-04-26 09:51:52.419 INFO AWT-EventQueue-0] momime.client.ui.frames.MomClientFrameUI:302 - fitFrameToScreen NewGameUI: pref=640x480 gcBounds=1067x600 insets=L0/R0/T0/B27 gcScale=1.5x1.5 toolkitScreen=1067x600 boundsAreLogical=true avail=1067x573 maxContent=1051x533
+[2026-04-26 09:52:18.316 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:249 - City spell effect SE190 appears twice in city view element list, with planes 0 and 1, so chose one with plane 0
+[2026-04-26 09:52:18.320 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:249 - City spell effect SE189 appears twice in city view element list, with planes 0 and 1, so chose one with plane 0
+[2026-04-26 09:52:18.321 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:249 - City spell effect SE029 appears twice in city view element list, with planes 0 and 1, so chose one with plane 0
+[2026-04-26 09:52:18.322 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:249 - City spell effect SE110 appears twice in city view element list, with planes 0 and 1, so chose one with plane 0
+[2026-04-26 09:52:18.323 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:249 - City spell effect SE139 appears twice in city view element list, with planes 0 and 1, so chose one with plane 0
+[2026-04-26 09:52:18.324 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:249 - City spell effect SE185 appears twice in city view element list, with planes 0 and 1, so chose one with plane 0
+[2026-04-26 09:52:18.325 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:249 - City spell effect SE077 appears twice in city view element list, with planes 0 and 1, so chose one with plane 0
+[2026-04-26 09:52:18.347 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:375 - Most expensive construction project is 1000
+[2026-04-26 09:52:18.350 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:385 - Hero item bonus that grants invisibility = IB64
+[2026-04-26 09:52:18.353 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:397 - Building ID that grants defence bonus (city walls) = BL35
+[2026-04-26 09:52:18.358 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:416 - Unit ID(s) that can move through other units (magic vortex) = UN199
+[2026-04-26 09:52:18.360 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:434 - Processing common XML file
+[2026-04-26 09:52:18.361 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:447 - Skipped consistency check on common XML animations
+[2026-04-26 09:52:18.547 INFO AWT-EventQueue-0] momime.common.database.TileSetEx:67 - Processed all smoothing system rules for the Overland map tile set
+[2026-04-26 09:52:18.553 INFO AWT-EventQueue-0] momime.common.database.TileSetEx:109 - Overland map tile set consistently has 4 frames at 2.0 FPS
+[2026-04-26 09:52:24.600 INFO AWT-EventQueue-0] momime.common.database.TileSetEx:173 - Overland map tile set consistently has all tiles of size 20x18
+[2026-04-26 09:52:31.606 INFO AWT-EventQueue-0] momime.common.database.TileSetEx:173 - Upscaled Overland map tile set consistently has all tiles of size 40x36
+[2026-04-26 09:52:31.620 INFO AWT-EventQueue-0] momime.common.database.TileSetEx:67 - Processed all smoothing system rules for the Combat map tile set
+[2026-04-26 09:52:31.621 INFO AWT-EventQueue-0] momime.common.database.TileSetEx:109 - Combat map tile set consistently has 5 frames at 4.0 FPS
+[2026-04-26 09:52:32.597 INFO AWT-EventQueue-0] momime.common.database.TileSetEx:173 - Combat map tile set consistently has all tiles of size 30x16
+[2026-04-26 09:52:33.821 INFO AWT-EventQueue-0] momime.common.database.TileSetEx:173 - Upscaled Combat map tile set consistently has all tiles of size 62x32
+[2026-04-26 09:52:34.330 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:465 - All 20 map features passed consistency checks
+[2026-04-26 09:52:34.613 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:498 - Largest building image is 40x33
+[2026-04-26 09:52:34.617 INFO AWT-EventQueue-0] momime.common.database.CommonDatabaseImpl:570 - Skipped checking other images from common XML
+[2026-04-26 09:52:34.693 INFO AWT-EventQueue-0] momime.client.ui.frames.MomClientFrameUI:302 - fitFrameToScreen JoinGameUI: pref=960x480 gcBounds=1067x600 insets=L0/R0/T0/B27 gcScale=1.5x1.5 toolkitScreen=1067x600 boundsAreLogical=true avail=1067x573 maxContent=1051x533
+[2026-04-26 09:52:34.741 INFO AWT-EventQueue-0] momime.client.ui.frames.MomClientFrameUI:302 - fitFrameToScreen LoadGameUI: pref=960x480 gcBounds=1067x600 insets=L0/R0/T0/B27 gcScale=1.5x1.5 toolkitScreen=1067x600 boundsAreLogical=true avail=1067x573 maxContent=1051x533
+[2026-04-26 10:00:59.460 INFO AWT-EventQueue-0] momime.client.ui.frames.MomClientFrameUI:302 - fitFrameToScreen SelectAdvisorUI: pref=266x158 gcBounds=1067x600 insets=L0/R0/T0/B27 gcScale=1.5x1.5 toolkitScreen=1067x600 boundsAreLogical=true avail=1067x573 maxContent=1051x533
+[2026-04-26 10:00:59.621 INFO AWT-EventQueue-0] momime.client.ui.frames.MomClientFrameUI:302 - fitFrameToScreen OverlandMapUIImpl: pref=640x480 gcBounds=1067x600 insets=L0/R0/T0/B27 gcScale=1.5x1.5 toolkitScreen=1067x600 boundsAreLogical=true avail=1067x573 maxContent=1051x533
+[2026-04-26 10:00:59.700 INFO AWT-EventQueue-0] momime.client.ui.frames.MomClientFrameUI:302 - fitFrameToScreen DamageCalculationsUI: pref=900x600 gcBounds=1067x600 insets=L0/R0/T0/B27 gcScale=1.5x1.5 toolkitScreen=1067x600 boundsAreLogical=true avail=1067x573 maxContent=1051x533
+[2026-04-26 10:00:59.712 INFO AWT-EventQueue-0] momime.client.ui.frames.MomClientFrameUI:332 - Scaling frame DamageCalculationsUI by 0.888 to fit content 900x600 into 1051x533

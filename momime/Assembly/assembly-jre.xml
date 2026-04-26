@@ -16,7 +16,7 @@
 			<filtered>true</filtered>
 		</fileSet>
 		<fileSet>
-			<directory>target/jre/jdk-${mom.jre.version}+${mom.jre.build}-jre</directory>
+			<directory>target/jre-download/jdk-${mom.jre.version}+${mom.jre.build}-jre</directory>
 			<outputDirectory>jre</outputDirectory>
 		</fileSet>
 		<fileSet>
@@ -51,8 +51,6 @@
 				<exclude>com.ndg.momime:momime-editors:jar:config</exclude>
 				
 				<exclude>com.ndg.momime:momime-mods</exclude>
-				
-				<exclude>org.adoptopenjdk</exclude>
 			</excludes>
 			<useProjectArtifact>false</useProjectArtifact>
 		</dependencySet>

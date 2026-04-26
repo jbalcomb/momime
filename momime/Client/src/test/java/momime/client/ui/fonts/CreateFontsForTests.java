@@ -56,7 +56,7 @@ public final class CreateFontsForTests
 	public final static Font getLargeFont () throws IOException, FontFormatException
 	{
 		if (largeFont == null)
-			largeFont = getMediumFontTTF ().deriveFont (20.0f);
+			largeFont = getMediumFontTTF ().deriveFont (24.0f);
 		
 		return largeFont;
 	}
@@ -69,7 +69,7 @@ public final class CreateFontsForTests
 	public final static Font getMediumFont () throws IOException, FontFormatException
 	{
 		if (mediumFont == null)
-			mediumFont = getMediumFontTTF ().deriveFont (15.0f);
+			mediumFont = getMediumFontTTF ().deriveFont (18.0f);
 		
 		return mediumFont;
 	}
@@ -95,7 +95,7 @@ public final class CreateFontsForTests
 	public final static Font getSmallFont () throws IOException, FontFormatException
 	{
 		if (smallFont == null)
-			smallFont = getSmallFontTTF ().deriveFont (10.0f);
+			smallFont = getSmallFontTTF ().deriveFont (12.0f);
 		
 		return smallFont;
 	}
@@ -121,7 +121,7 @@ public final class CreateFontsForTests
 	public final static Font getTinyFont () throws IOException, FontFormatException
 	{
 		if (tinyFont == null)
-			tinyFont = getTinyFontTTF ().deriveFont (11.0f);
+			tinyFont = getTinyFontTTF ().deriveFont (13.0f);
 		
 		return tinyFont;
 	}

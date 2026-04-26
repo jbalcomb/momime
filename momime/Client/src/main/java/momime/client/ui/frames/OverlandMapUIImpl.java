@@ -226,7 +226,7 @@ public final class OverlandMapUIImpl extends MomClientFrameUI implements Overlan
 	private int mapViewPlane = 0;
 
 	/** Zoom factor for the overland map; between 10 (1x) and 20 (2x) */
-	private int mapViewZoom = 10;
+	private int mapViewZoom = 20;
 
 	/** Pixel offset into the map where the top left of the window is currently positioned, for scrolling around */
 	private int mapViewX = 0;

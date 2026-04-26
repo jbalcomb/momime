@@ -1225,11 +1225,11 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
 	</bean>
 
 	<bean id="largeFont" class="java.awt.Font" factory-bean="mediumFontTTF" factory-method="deriveFont">
-		<constructor-arg value="20.0" />
+		<constructor-arg value="24.0" />
 	</bean>
 
 	<bean id="mediumFont" class="java.awt.Font" factory-bean="mediumFontTTF" factory-method="deriveFont">
-		<constructor-arg value="15.0" />
+		<constructor-arg value="18.0" />
 	</bean>
 
 	<bean id="smallFontTTF" class="java.awt.Font" factory-bean="fontFactory" factory-method="loadFont">
@@ -1237,7 +1237,7 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
 	</bean>
 
 	<bean id="smallFont" class="java.awt.Font" factory-bean="smallFontTTF" factory-method="deriveFont">
-		<constructor-arg value="10.0" />
+		<constructor-arg value="12.0" />
 	</bean>
 
 	<bean id="tinyFontTTF" class="java.awt.Font" factory-bean="fontFactory" factory-method="loadFont">
@@ -1245,7 +1245,7 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
 	</bean>
 
 	<bean id="tinyFont" class="java.awt.Font" factory-bean="tinyFontTTF" factory-method="deriveFont">
-		<constructor-arg value="11.0" />
+		<constructor-arg value="13.0" />
 	</bean>
 	
 	<!-- Drag and drop support -->

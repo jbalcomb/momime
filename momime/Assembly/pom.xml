@@ -7,7 +7,7 @@
 	<parent>
 		<groupId>com.ndg.momime</groupId>
 		<artifactId>momime-parent</artifactId>
-		<version>1.7.0</version>
+		<version>1.7.1-rc1</version>
 	</parent>
 
 	<build>
@@ -134,21 +134,33 @@
 						</configuration>
 					</execution>
 
-					<!-- Unpack JRE -->
+				</executions>
+			</plugin>
+
+			<!-- Download the bundled JRE directly from the Adoptium API -->
+			<!-- Avoids the dead org.adoptopenjdk:jre Maven Central coords -->
+			<plugin>
+				<groupId>com.googlecode.maven-download-plugin</groupId>
+				<artifactId>download-maven-plugin</artifactId>
+				<version>1.13.0</version>
+				<executions>
 					<execution>
-						<id>unpack-jre</id>
+						<id>download-and-unpack-jre</id>
 						<phase>package</phase>
 						<goals>
-							<goal>unpack-dependencies</goal>
+							<goal>wget</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>target/jre</outputDirectory>
-							<includeArtifactIds>jre</includeArtifactIds>
+							<url>https://api.adoptium.net/v3/binary/version/jdk-${mom.jre.version}%2B${mom.jre.build}/${mom.jre.os}/${mom.jre.arch}/jre/hotspot/normal/eclipse</url>
+							<outputFileName>jre-${mom.jre.version}.zip</outputFileName>
+							<outputDirectory>${project.build.directory}/jre-download</outputDirectory>
+							<unpack>true</unpack>
+							<skipCache>false</skipCache>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
-	  
+
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<executions>
@@ -279,12 +291,6 @@
 			<artifactId>momime-editors</artifactId>
 			<version>${project.version}</version>
 			<classifier>config</classifier>
-		</dependency>
-		<dependency>
-			<groupId>org.adoptopenjdk</groupId>
-			<artifactId>jre</artifactId>
-			<version>${mom.jre.version}</version>
-			<type>zip</type>
 		</dependency>
 	</dependencies>
 </project>

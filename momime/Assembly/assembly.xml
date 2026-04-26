@@ -47,8 +47,6 @@
 				<exclude>com.ndg.momime:momime-editors:jar:config</exclude>
 
 				<exclude>com.ndg.momime:momime-mods</exclude>
-				
-				<exclude>org.adoptopenjdk</exclude>
 			</excludes>
 			<useProjectArtifact>false</useProjectArtifact>
 		</dependencySet>

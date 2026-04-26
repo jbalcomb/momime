@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ndg.momime</groupId>
 	<artifactId>momime-parent</artifactId>
-	<version>1.7.0</version>
+	<version>1.7.1-rc1</version>
 	<name>momimeParent</name>
 	<description>MoM IME multimodule parent project</description>
 	<packaging>pom</packaging>
@@ -26,6 +26,9 @@
 		<mom.audio.version>0.8.0</mom.audio.version>
 		<mom.jre.version>25.0.1</mom.jre.version>
 		<mom.jre.build>8</mom.jre.build>
+		<!-- Adoptium JRE target OS/arch for the bundled JRE. Override on the command line if building for another platform. -->
+		<mom.jre.os>windows</mom.jre.os>
+		<mom.jre.arch>x64</mom.jre.arch>
 	</properties>
 
 	<modules>
