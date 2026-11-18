@@ -1,0 +1,306 @@
+diff --git a/Common/src/main/java/momime/common/calculations/CityCalculations.java b/Common/src/main/java/momime/common/calculations/CityCalculations.java
+index 628e56cc..1ccf6068 100644
+--- a/Common/src/main/java/momime/common/calculations/CityCalculations.java
++++ b/Common/src/main/java/momime/common/calculations/CityCalculations.java
+@@ -69,7 +69,27 @@ public interface CityCalculations
+ 	public void calculateGoldTradeBonus (final CityProductionBreakdown gold, final MapVolumeOfMemoryGridCells map, final MapCoordinates3DEx cityLocation,
+ 		final Integer overridePopulation, final CoordinateSystem sys, final CommonDatabase db)
+ 		throws RecordNotFoundException;
+-	
++
++	/**
++	 * Strategy guide p210.  Gold trade % bonus from road connections to other cities.  Follows a continuous road (in any of the 8 directions,
++	 * on the same plane) outwards from the city, and every city found along the way contributes:
++	 *
++	 * +0.5% per 1,000 population if the connected city is the same race as this city
++	 * +1% per 1,000 population if the connected city is a different race
++	 *
++	 * Cities count regardless of who owns them, and roads pass through intermediate cities (the city tile itself always has a road on it).
++	 * Same race half-percents are totalled before rounding down, so e.g. 2 connected same race cities of size 3 give +3%, not +2%.
++	 * Normal and enchanted roads count the same.
++	 *
++	 * @param map Known terrain
++	 * @param cityLocation Location of the city to calculate for
++	 * @param cityRaceID Race of the city to calculate for; if null (i.e. no city here yet) there is no road bonus
++	 * @param sys Coordinate system for traversing overland map
++	 * @return Gold trade % bonus from roads, before applying the population cap
++	 */
++	public int calculateGoldTradeBonusFromRoads (final MapVolumeOfMemoryGridCells map, final MapCoordinates3DEx cityLocation,
++		final String cityRaceID, final CoordinateSystem sys);
++
+ 	/**
+ 	 * @param map Known terrain; can use memory map, since we only ever call this for our own cities, and we can always see the terrain surrounding those
+ 	 * @param cityLocation Location of the city to check
+diff --git a/Common/src/main/java/momime/common/calculations/CityCalculationsImpl.java b/Common/src/main/java/momime/common/calculations/CityCalculationsImpl.java
+index d8db8297..c3c7671c 100644
+--- a/Common/src/main/java/momime/common/calculations/CityCalculationsImpl.java
++++ b/Common/src/main/java/momime/common/calculations/CityCalculationsImpl.java
+@@ -1,6 +1,8 @@
+ package momime.common.calculations;
+ 
++import java.util.ArrayDeque;
+ import java.util.ArrayList;
++import java.util.Deque;
+ import java.util.HashMap;
+ import java.util.Iterator;
+ import java.util.List;
+@@ -269,12 +271,12 @@ public final class CityCalculationsImpl implements CityCalculations
+ 			d++;
+ 		}
+ 		
+-		// Not yet implemented
+-		gold.setTradePercentageBonusFromRoads (0);
+-		
+-		// Nomad's bonus
++		// Road connections to other cities
+ 		final OverlandMapCityData cityData = centreTile.getCityData ();
+ 		final String raceID = (cityData != null) ? cityData.getCityRaceID () : null;
++		gold.setTradePercentageBonusFromRoads (calculateGoldTradeBonusFromRoads (map, cityLocation, raceID, sys));
++
++		// Nomad's bonus
+ 		final RaceEx race = (raceID != null) ? db.findRace (raceID, "calculateGoldTradeBonus") : null;
+ 		final Integer raceBonus = (race != null) ? race.getGoldTradeBonus () : null;
+ 		gold.setTradePercentageBonusFromRace ((raceBonus != null) ? raceBonus : 0);
+@@ -299,6 +301,72 @@ public final class CityCalculationsImpl implements CityCalculations
+ 		gold.setPercentageBonus (gold.getPercentageBonus () + gold.getTradePercentageBonusCapped ());
+ 	}
+ 
++	/**
++	 * Strategy guide p210.  Gold trade % bonus from road connections to other cities.  Follows a continuous road (in any of the 8 directions,
++	 * on the same plane) outwards from the city, and every city found along the way contributes:
++	 *
++	 * +0.5% per 1,000 population if the connected city is the same race as this city
++	 * +1% per 1,000 population if the connected city is a different race
++	 *
++	 * Cities count regardless of who owns them, and roads pass through intermediate cities (the city tile itself always has a road on it).
++	 * Same race half-percents are totalled before rounding down, so e.g. 2 connected same race cities of size 3 give +3%, not +2%.
++	 * Normal and enchanted roads count the same.
++	 *
++	 * @param map Known terrain
++	 * @param cityLocation Location of the city to calculate for
++	 * @param cityRaceID Race of the city to calculate for; if null (i.e. no city here yet) there is no road bonus
++	 * @param sys Coordinate system for traversing overland map
++	 * @return Gold trade % bonus from roads, before applying the population cap
++	 */
++	@Override
++	public final int calculateGoldTradeBonusFromRoads (final MapVolumeOfMemoryGridCells map, final MapCoordinates3DEx cityLocation,
++		final String cityRaceID, final CoordinateSystem sys)
++	{
++		// Count in half-percents so same race cities can be totalled up before rounding
++		int doubleBonus = 0;
++
++		final MapAreaOfMemoryGridCells plane = map.getPlane ().get (cityLocation.getZ ());
++		final OverlandMapTerrainData centreTerrain = plane.getRow ().get (cityLocation.getY ()).getCell ().get (cityLocation.getX ()).getTerrainData ();
++		if ((cityRaceID != null) && (centreTerrain != null) && (centreTerrain.getRoadTileTypeID () != null))
++		{
++			// Flood fill outwards along the road network
++			final boolean [] [] visited = new boolean [sys.getHeight ()] [sys.getWidth ()];
++			visited [cityLocation.getY ()] [cityLocation.getX ()] = true;
++
++			final Deque<MapCoordinates3DEx> toCheck = new ArrayDeque<MapCoordinates3DEx> ();
++			toCheck.add (new MapCoordinates3DEx (cityLocation));
++
++			while (!toCheck.isEmpty ())
++			{
++				final MapCoordinates3DEx thisLocation = toCheck.remove ();
++				for (int d = 1; d <= getCoordinateSystemUtils ().getMaxDirection (sys.getCoordinateSystemType ()); d++)
++				{
++					final MapCoordinates3DEx coords = new MapCoordinates3DEx (thisLocation);
++					if ((getCoordinateSystemUtils ().move3DCoordinates (sys, coords, d)) && (!visited [coords.getY ()] [coords.getX ()]))
++					{
++						visited [coords.getY ()] [coords.getX ()] = true;
++
++						final MemoryGridCell mc = plane.getRow ().get (coords.getY ()).getCell ().get (coords.getX ());
++						if ((mc.getTerrainData () != null) && (mc.getTerrainData ().getRoadTileTypeID () != null))
++						{
++							toCheck.add (coords);
++
++							// Is there a city here?  Outposts (under 1,000 population) contribute nothing
++							final OverlandMapCityData connectedCity = mc.getCityData ();
++							if ((connectedCity != null) && (connectedCity.getCityRaceID () != null))
++							{
++								final int connectedPopulation = connectedCity.getCityPopulation () / 1000;
++								doubleBonus = doubleBonus + (cityRaceID.equals (connectedCity.getCityRaceID ()) ? connectedPopulation : connectedPopulation * 2);
++							}
++						}
++					}
++				}
++			}
++		}
++
++		return doubleBonus / 2;
++	}
++
+ 	/**
+ 	 * @param map Known terrain; can use memory map, since we only ever call this for our own cities, and we can always see the terrain surrounding those
+ 	 * @param cityLocation Location of the city to check
+diff --git a/Common/src/test/java/momime/common/calculations/TestCityCalculationsImpl.java b/Common/src/test/java/momime/common/calculations/TestCityCalculationsImpl.java
+index bd579ff2..d7625dbd 100644
+--- a/Common/src/test/java/momime/common/calculations/TestCityCalculationsImpl.java
++++ b/Common/src/test/java/momime/common/calculations/TestCityCalculationsImpl.java
+@@ -512,6 +512,165 @@ public final class TestCityCalculationsImpl
+ 		assertEquals (33, breakdown.getPercentageBonus ());
+ 	}
+ 
++	/**
++	 * Puts a road, and optionally a city, onto a test map
++	 * @param map Map to update
++	 * @param x X coordinate
++	 * @param y Y coordinate
++	 * @param z Plane
++	 * @param cityRaceID Race of city to put here; null for no city
++	 * @param cityPopulation Population of city to put here
++	 */
++	private final void addRoad (final MapVolumeOfMemoryGridCells map, final int x, final int y, final int z, final String cityRaceID, final int cityPopulation)
++	{
++		final MemoryGridCell mc = map.getPlane ().get (z).getRow ().get (y).getCell ().get (x);
++		if (mc.getTerrainData () == null)
++			mc.setTerrainData (new OverlandMapTerrainData ());
++
++		mc.getTerrainData ().setRoadTileTypeID ("TT98");
++
++		if (cityRaceID != null)
++		{
++			final OverlandMapCityData cityData = new OverlandMapCityData ();
++			cityData.setCityRaceID (cityRaceID);
++			cityData.setCityPopulation (cityPopulation);
++			mc.setCityData (cityData);
++		}
++	}
++
++	/**
++	 * Tests the calculateGoldTradeBonusFromRoads method, following roads to cities of the same and different races,
++	 * and checking that cities not connected by road, or on the other plane, are ignored
++	 */
++	@Test
++	public final void testCalculateGoldTradeBonusFromRoads ()
++	{
++		// Set up object to test
++		final CityCalculationsImpl calc = new CityCalculationsImpl ();
++		calc.setCoordinateSystemUtils (new CoordinateSystemUtilsImpl ());
++
++		// Map
++		final CoordinateSystem sys = GenerateTestData.createOverlandMapCoordinateSystem ();
++		final MapVolumeOfMemoryGridCells map = GenerateTestData.createOverlandMap (sys);
++
++		// Our city
++		addRoad (map, 20, 10, 1, "RC01", 8000);
++
++		// Road east to a same race city of size 3, then continuing through it to a different race city of size 5
++		addRoad (map, 21, 10, 1, null, 0);
++		addRoad (map, 22, 10, 1, "RC01", 3700);
++		addRoad (map, 23, 10, 1, null, 0);
++		addRoad (map, 24, 10, 1, "RC02", 5900);
++
++		// Road diagonally south west to another same race city of size 3
++		addRoad (map, 19, 11, 1, null, 0);
++		addRoad (map, 18, 12, 1, "RC01", 3000);
++
++		// Outpost on the road contributes nothing
++		addRoad (map, 21, 9, 1, "RC02", 800);
++
++		// Gap in the road at x=25, so this huge city isn't connected
++		addRoad (map, 26, 10, 1, "RC02", 20000);
++
++		// City in the same place on the other plane isn't connected either
++		addRoad (map, 21, 10, 0, "RC02", 20000);
++		addRoad (map, 22, 10, 0, "RC02", 20000);
++
++		// Same race = (3 + 3) / 2 = 3%, which proves the halves are added up before rounding down.  Different race = 5%.
++		assertEquals (8, calc.calculateGoldTradeBonusFromRoads (map, new MapCoordinates3DEx (20, 10, 1), "RC01", sys));
++
++		// From the point of view of the RC02 city, all 3 RC01 cities are now a different race so count 1% each, 3 + 8 + 3 = 14%
++		assertEquals (14, calc.calculateGoldTradeBonusFromRoads (map, new MapCoordinates3DEx (24, 10, 1), "RC02", sys));
++	}
++
++	/**
++	 * Tests the calculateGoldTradeBonusFromRoads method following a road that wraps around the left/right edge of the map
++	 */
++	@Test
++	public final void testCalculateGoldTradeBonusFromRoads_Wrapping ()
++	{
++		// Set up object to test
++		final CityCalculationsImpl calc = new CityCalculationsImpl ();
++		calc.setCoordinateSystemUtils (new CoordinateSystemUtilsImpl ());
++
++		// Map
++		final CoordinateSystem sys = GenerateTestData.createOverlandMapCoordinateSystem ();
++		final MapVolumeOfMemoryGridCells map = GenerateTestData.createOverlandMap (sys);
++
++		addRoad (map, 0, 10, 1, "RC01", 8000);
++		addRoad (map, 59, 10, 1, null, 0);
++		addRoad (map, 58, 10, 1, "RC02", 7000);
++
++		assertEquals (7, calc.calculateGoldTradeBonusFromRoads (map, new MapCoordinates3DEx (0, 10, 1), "RC01", sys));
++	}
++
++	/**
++	 * Tests the calculateGoldTradeBonusFromRoads method when there's no city at the location (e.g. AI or surveyor evaluating a potential city site)
++	 */
++	@Test
++	public final void testCalculateGoldTradeBonusFromRoads_NoCity ()
++	{
++		// Set up object to test
++		final CityCalculationsImpl calc = new CityCalculationsImpl ();
++		calc.setCoordinateSystemUtils (new CoordinateSystemUtilsImpl ());
++
++		// Map
++		final CoordinateSystem sys = GenerateTestData.createOverlandMapCoordinateSystem ();
++		final MapVolumeOfMemoryGridCells map = GenerateTestData.createOverlandMap (sys);
++
++		addRoad (map, 20, 10, 1, null, 0);
++		addRoad (map, 21, 10, 1, "RC02", 7000);
++
++		assertEquals (0, calc.calculateGoldTradeBonusFromRoads (map, new MapCoordinates3DEx (20, 10, 1), null, sys));
++	}
++
++	/**
++	 * Tests the calculateGoldTradeBonus method for a Nomad city with road connections as well as a terrain bonus,
++	 * to prove all 3 sources get added together and then capped
++	 * @throws RecordNotFoundException If we encounter a tile type or race that we cannot find in the cache
++	 */
++	@Test
++	public final void testCalculateGoldTradeBonus_WithRoadsAndRaceBonus () throws RecordNotFoundException
++	{
++		// Mock database
++		final CommonDatabase db = mock (CommonDatabase.class);
++
++		final TileTypeEx centreTileType = new TileTypeEx ();
++		centreTileType.setGoldBonus (20);
++		when (db.findTileType ("TT01", "calculateGoldTradeBonus")).thenReturn (centreTileType);
++
++		final RaceEx nomads = new RaceEx ();
++		nomads.setGoldTradeBonus (50);
++		when (db.findRace ("RC08", "calculateGoldTradeBonus")).thenReturn (nomads);
++
++		// Set up object to test
++		final CityCalculationsImpl calc = new CityCalculationsImpl ();
++		calc.setCoordinateSystemUtils (new CoordinateSystemUtilsImpl ());
++
++		// Map
++		final CoordinateSystem sys = GenerateTestData.createOverlandMapCoordinateSystem ();
++		final MapVolumeOfMemoryGridCells map = GenerateTestData.createOverlandMap (sys);
++
++		// Our city, on a river, with a road to a size 4 city of another race
++		addRoad (map, 20, 10, 1, "RC08", 25000);
++		map.getPlane ().get (1).getRow ().get (10).getCell ().get (20).getTerrainData ().setTileTypeID ("TT01");
++		addRoad (map, 21, 10, 1, null, 0);
++		addRoad (map, 22, 10, 1, "RC01", 4000);
++
++		// Call method
++		final CityProductionBreakdown breakdown = new CityProductionBreakdown ();
++		calc.calculateGoldTradeBonus (breakdown, map, new MapCoordinates3DEx (20, 10, 1), null, sys, db);
++
++		// Check results
++		assertEquals (20, breakdown.getTradePercentageBonusFromTileType ());
++		assertEquals (4, breakdown.getTradePercentageBonusFromRoads ());
++		assertEquals (50, breakdown.getTradePercentageBonusFromRace ());
++		assertEquals (74, breakdown.getTradePercentageBonusUncapped ());
++		assertEquals (25, breakdown.getTotalPopulation ());
++		assertEquals (74, breakdown.getTradePercentageBonusCapped ());
++		assertEquals (74, breakdown.getPercentageBonus ());
++	}
++
+ 	/**
+ 	 * Tests the buildingPassesTileTypeRequirements method, where the building has no tile type requirement so just automatically passes
+ 	 * @throws RecordNotFoundException If the buildingID doesn't exist

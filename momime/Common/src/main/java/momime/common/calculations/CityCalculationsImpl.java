@@ -1,6 +1,8 @@
 package momime.common.calculations;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -269,12 +271,12 @@ public final class CityCalculationsImpl implements CityCalculations
 			d++;
 		}
 		
-		// Not yet implemented
-		gold.setTradePercentageBonusFromRoads (0);
-		
-		// Nomad's bonus
+		// Road connections to other cities
 		final OverlandMapCityData cityData = centreTile.getCityData ();
 		final String raceID = (cityData != null) ? cityData.getCityRaceID () : null;
+		gold.setTradePercentageBonusFromRoads (calculateGoldTradeBonusFromRoads (map, cityLocation, raceID, sys));
+
+		// Nomad's bonus
 		final RaceEx race = (raceID != null) ? db.findRace (raceID, "calculateGoldTradeBonus") : null;
 		final Integer raceBonus = (race != null) ? race.getGoldTradeBonus () : null;
 		gold.setTradePercentageBonusFromRace ((raceBonus != null) ? raceBonus : 0);
@@ -297,6 +299,72 @@ public final class CityCalculationsImpl implements CityCalculations
 		
 		// Add to other bonuses
 		gold.setPercentageBonus (gold.getPercentageBonus () + gold.getTradePercentageBonusCapped ());
+	}
+
+	/**
+	 * Strategy guide p210.  Gold trade % bonus from road connections to other cities.  Follows a continuous road (in any of the 8 directions,
+	 * on the same plane) outwards from the city, and every city found along the way contributes:
+	 *
+	 * +0.5% per 1,000 population if the connected city is the same race as this city
+	 * +1% per 1,000 population if the connected city is a different race
+	 *
+	 * Cities count regardless of who owns them, and roads pass through intermediate cities (the city tile itself always has a road on it).
+	 * Same race half-percents are totalled before rounding down, so e.g. 2 connected same race cities of size 3 give +3%, not +2%.
+	 * Normal and enchanted roads count the same.
+	 *
+	 * @param map Known terrain
+	 * @param cityLocation Location of the city to calculate for
+	 * @param cityRaceID Race of the city to calculate for; if null (i.e. no city here yet) there is no road bonus
+	 * @param sys Coordinate system for traversing overland map
+	 * @return Gold trade % bonus from roads, before applying the population cap
+	 */
+	@Override
+	public final int calculateGoldTradeBonusFromRoads (final MapVolumeOfMemoryGridCells map, final MapCoordinates3DEx cityLocation,
+		final String cityRaceID, final CoordinateSystem sys)
+	{
+		// Count in half-percents so same race cities can be totalled up before rounding
+		int doubleBonus = 0;
+
+		final MapAreaOfMemoryGridCells plane = map.getPlane ().get (cityLocation.getZ ());
+		final OverlandMapTerrainData centreTerrain = plane.getRow ().get (cityLocation.getY ()).getCell ().get (cityLocation.getX ()).getTerrainData ();
+		if ((cityRaceID != null) && (centreTerrain != null) && (centreTerrain.getRoadTileTypeID () != null))
+		{
+			// Flood fill outwards along the road network
+			final boolean [] [] visited = new boolean [sys.getHeight ()] [sys.getWidth ()];
+			visited [cityLocation.getY ()] [cityLocation.getX ()] = true;
+
+			final Deque<MapCoordinates3DEx> toCheck = new ArrayDeque<MapCoordinates3DEx> ();
+			toCheck.add (new MapCoordinates3DEx (cityLocation));
+
+			while (!toCheck.isEmpty ())
+			{
+				final MapCoordinates3DEx thisLocation = toCheck.remove ();
+				for (int d = 1; d <= getCoordinateSystemUtils ().getMaxDirection (sys.getCoordinateSystemType ()); d++)
+				{
+					final MapCoordinates3DEx coords = new MapCoordinates3DEx (thisLocation);
+					if ((getCoordinateSystemUtils ().move3DCoordinates (sys, coords, d)) && (!visited [coords.getY ()] [coords.getX ()]))
+					{
+						visited [coords.getY ()] [coords.getX ()] = true;
+
+						final MemoryGridCell mc = plane.getRow ().get (coords.getY ()).getCell ().get (coords.getX ());
+						if ((mc.getTerrainData () != null) && (mc.getTerrainData ().getRoadTileTypeID () != null))
+						{
+							toCheck.add (coords);
+
+							// Is there a city here?  Outposts (under 1,000 population) contribute nothing
+							final OverlandMapCityData connectedCity = mc.getCityData ();
+							if ((connectedCity != null) && (connectedCity.getCityRaceID () != null))
+							{
+								final int connectedPopulation = connectedCity.getCityPopulation () / 1000;
+								doubleBonus = doubleBonus + (cityRaceID.equals (connectedCity.getCityRaceID ()) ? connectedPopulation : connectedPopulation * 2);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return doubleBonus / 2;
 	}
 
 	/**

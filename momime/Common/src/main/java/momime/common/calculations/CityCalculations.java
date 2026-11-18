@@ -69,7 +69,27 @@ public interface CityCalculations
 	public void calculateGoldTradeBonus (final CityProductionBreakdown gold, final MapVolumeOfMemoryGridCells map, final MapCoordinates3DEx cityLocation,
 		final Integer overridePopulation, final CoordinateSystem sys, final CommonDatabase db)
 		throws RecordNotFoundException;
-	
+
+	/**
+	 * Strategy guide p210.  Gold trade % bonus from road connections to other cities.  Follows a continuous road (in any of the 8 directions,
+	 * on the same plane) outwards from the city, and every city found along the way contributes:
+	 *
+	 * +0.5% per 1,000 population if the connected city is the same race as this city
+	 * +1% per 1,000 population if the connected city is a different race
+	 *
+	 * Cities count regardless of who owns them, and roads pass through intermediate cities (the city tile itself always has a road on it).
+	 * Same race half-percents are totalled before rounding down, so e.g. 2 connected same race cities of size 3 give +3%, not +2%.
+	 * Normal and enchanted roads count the same.
+	 *
+	 * @param map Known terrain
+	 * @param cityLocation Location of the city to calculate for
+	 * @param cityRaceID Race of the city to calculate for; if null (i.e. no city here yet) there is no road bonus
+	 * @param sys Coordinate system for traversing overland map
+	 * @return Gold trade % bonus from roads, before applying the population cap
+	 */
+	public int calculateGoldTradeBonusFromRoads (final MapVolumeOfMemoryGridCells map, final MapCoordinates3DEx cityLocation,
+		final String cityRaceID, final CoordinateSystem sys);
+
 	/**
 	 * @param map Known terrain; can use memory map, since we only ever call this for our own cities, and we can always see the terrain surrounding those
 	 * @param cityLocation Location of the city to check
