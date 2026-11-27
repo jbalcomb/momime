@@ -419,18 +419,19 @@ public final class HelpUI extends MomClientFrameUI
 					{
 						// Our spell - find research status
 						final SpellResearchStatus researchStatus = getSpellUtils ().findSpellResearchStatus (getClient ().getOurPersistentPlayerPrivateKnowledge ().getSpellResearchStatus (), spellID);
+						final int fullResearchCost = getSpellUtils ().getFullResearchCost (spellDef, getClient ().getOurPersistentPlayerPrivateKnowledge ());
 						final List<LanguageText> languageText;
 						if (researchStatus.getStatus () == SpellResearchStatusID.AVAILABLE)
 							languageText = getLanguages ().getHelpScreen ().getSpellBookResearchCostResearched ();
-						else if (researchStatus.getRemainingResearchCost () == spellDef.getResearchCost ())
+						else if (researchStatus.getRemainingResearchCost () == fullResearchCost)
 							languageText = getLanguages ().getHelpScreen ().getSpellBookResearchCostNotStarted ();
 						else
 							languageText = getLanguages ().getHelpScreen ().getSpellBookResearchCostPartial ();
 
 						spellStats.append (System.lineSeparator () + getLanguageHolder ().findDescription (languageText).replaceAll
-							("RESEARCH_TOTAL", getTextUtils ().intToStrCommas (spellDef.getResearchCost ())).replaceAll
+							("RESEARCH_TOTAL", getTextUtils ().intToStrCommas (fullResearchCost)).replaceAll
 							("PRODUCTION_TYPE", (researchSuffix != null) ? researchSuffix : CommonDatabaseConstants.PRODUCTION_TYPE_ID_RESEARCH).replaceAll
-							("RESEARCH_SO_FAR", getTextUtils ().intToStrCommas (spellDef.getResearchCost () - researchStatus.getRemainingResearchCost ())));
+							("RESEARCH_SO_FAR", getTextUtils ().intToStrCommas (fullResearchCost - researchStatus.getRemainingResearchCost ())));
 					}
 				}
 				

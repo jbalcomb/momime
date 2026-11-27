@@ -1,0 +1,921 @@
+diff --git a/Client/src/main/java/momime/client/messages/process/UpdateRemainingResearchCostMessageImpl.java b/Client/src/main/java/momime/client/messages/process/UpdateRemainingResearchCostMessageImpl.java
+index f36c3ebd..27106c07 100644
+--- a/Client/src/main/java/momime/client/messages/process/UpdateRemainingResearchCostMessageImpl.java
++++ b/Client/src/main/java/momime/client/messages/process/UpdateRemainingResearchCostMessageImpl.java
+@@ -44,6 +44,10 @@ public final class UpdateRemainingResearchCostMessageImpl extends UpdateRemainin
+ 		getSpellUtils ().findSpellResearchStatus (getClient ().getOurPersistentPlayerPrivateKnowledge ().getSpellResearchStatus (),
+ 			getSpellID ()).setRemainingResearchCost (getRemainingResearchCost ());
+ 		
++		// Spell of Mastery's full research cost is reduced as we learn spells
++		if (getSpellOfMasteryResearchCostReduction () != null)
++			getClient ().getOurPersistentPlayerPrivateKnowledge ().setSpellOfMasteryResearchCostReduction (getSpellOfMasteryResearchCostReduction ());
++		
+ 		// Show the reduced value in the spell book research pages
+ 		getSpellBookUI ().languageOrPageChanged ();
+ 		
+diff --git a/Client/src/main/java/momime/client/ui/frames/HelpUI.java b/Client/src/main/java/momime/client/ui/frames/HelpUI.java
+index a50e0cc2..9c728709 100644
+--- a/Client/src/main/java/momime/client/ui/frames/HelpUI.java
++++ b/Client/src/main/java/momime/client/ui/frames/HelpUI.java
+@@ -419,18 +419,19 @@ public final class HelpUI extends MomClientFrameUI
+ 					{
+ 						// Our spell - find research status
+ 						final SpellResearchStatus researchStatus = getSpellUtils ().findSpellResearchStatus (getClient ().getOurPersistentPlayerPrivateKnowledge ().getSpellResearchStatus (), spellID);
++						final int fullResearchCost = getSpellUtils ().getFullResearchCost (spellDef, getClient ().getOurPersistentPlayerPrivateKnowledge ());
+ 						final List<LanguageText> languageText;
+ 						if (researchStatus.getStatus () == SpellResearchStatusID.AVAILABLE)
+ 							languageText = getLanguages ().getHelpScreen ().getSpellBookResearchCostResearched ();
+-						else if (researchStatus.getRemainingResearchCost () == spellDef.getResearchCost ())
++						else if (researchStatus.getRemainingResearchCost () == fullResearchCost)
+ 							languageText = getLanguages ().getHelpScreen ().getSpellBookResearchCostNotStarted ();
+ 						else
+ 							languageText = getLanguages ().getHelpScreen ().getSpellBookResearchCostPartial ();
+ 
+ 						spellStats.append (System.lineSeparator () + getLanguageHolder ().findDescription (languageText).replaceAll
+-							("RESEARCH_TOTAL", getTextUtils ().intToStrCommas (spellDef.getResearchCost ())).replaceAll
++							("RESEARCH_TOTAL", getTextUtils ().intToStrCommas (fullResearchCost)).replaceAll
+ 							("PRODUCTION_TYPE", (researchSuffix != null) ? researchSuffix : CommonDatabaseConstants.PRODUCTION_TYPE_ID_RESEARCH).replaceAll
+-							("RESEARCH_SO_FAR", getTextUtils ().intToStrCommas (spellDef.getResearchCost () - researchStatus.getRemainingResearchCost ())));
++							("RESEARCH_SO_FAR", getTextUtils ().intToStrCommas (fullResearchCost - researchStatus.getRemainingResearchCost ())));
+ 					}
+ 				}
+ 				
+diff --git a/Client/src/main/java/momime/client/ui/frames/MagicSlidersUI.java b/Client/src/main/java/momime/client/ui/frames/MagicSlidersUI.java
+index 52e71c10..9138c70d 100644
+--- a/Client/src/main/java/momime/client/ui/frames/MagicSlidersUI.java
++++ b/Client/src/main/java/momime/client/ui/frames/MagicSlidersUI.java
+@@ -658,7 +658,7 @@ public final class MagicSlidersUI extends MomClientFrameUI
+ 				
+ 					final SpellResearchStatus researchStatus = getSpellUtils ().findSpellResearchStatus (getClient ().getOurPersistentPlayerPrivateKnowledge ().getSpellResearchStatus (),
+ 						getClient ().getOurPersistentPlayerPrivateKnowledge ().getSpellIDBeingResearched ());
+-					final int totalResearchCost = spell.getResearchCost ();
++					final int totalResearchCost = getSpellUtils ().getFullResearchCost (spell, getClient ().getOurPersistentPlayerPrivateKnowledge ());
+ 				
+ 					researchPerTurn.setMaximum (totalResearchCost);
+ 					researchPerTurn.setValue (totalResearchCost - researchStatus.getRemainingResearchCost ());
+diff --git a/Client/src/main/java/momime/client/ui/frames/SpellBookNewUI.java b/Client/src/main/java/momime/client/ui/frames/SpellBookNewUI.java
+index 41ec918d..46e4eeac 100644
+--- a/Client/src/main/java/momime/client/ui/frames/SpellBookNewUI.java
++++ b/Client/src/main/java/momime/client/ui/frames/SpellBookNewUI.java
+@@ -719,7 +719,7 @@ public final class SpellBookNewUI extends MomClientFrameUI
+ 														getClient ().getOurPersistentPlayerPrivateKnowledge ().getSpellIDBeingResearched ());
+ 													
+ 													// If we've made no progress researching the old spell, then we can switch with no penalty
+-													if ((oldResearchStatus.getRemainingResearchCost () == oldSpell.getResearchCost ()) &&
++													if ((oldResearchStatus.getRemainingResearchCost () == getSpellUtils ().getFullResearchCost (oldSpell, getClient ().getOurPersistentPlayerPrivateKnowledge ())) &&
+ 														(getClient ().getSessionDescription ().getSpellSetting ().getSwitchResearch () != SwitchResearch.DISALLOWED))
+ 														sendMessage = true;
+ 													
+diff --git a/Common/src/main/java/momime/common/database/CommonDatabaseConstants.java b/Common/src/main/java/momime/common/database/CommonDatabaseConstants.java
+index 1b184785..e41253e6 100644
+--- a/Common/src/main/java/momime/common/database/CommonDatabaseConstants.java
++++ b/Common/src/main/java/momime/common/database/CommonDatabaseConstants.java
+@@ -89,6 +89,9 @@ public final class CommonDatabaseConstants
+ 	
+ 	/** Death books */
+ 	public final static String PICK_ID_DEATH_BOOK = "MB02";
++
++	/** Pick type for spell books (as opposed to retorts) */
++	public final static String PICK_TYPE_ID_SPELL_BOOK = "B";
+ 	
+ 	// retorts
+ 
+diff --git a/Common/src/main/java/momime/common/utils/SpellUtils.java b/Common/src/main/java/momime/common/utils/SpellUtils.java
+index a07b7fa9..97cef589 100644
+--- a/Common/src/main/java/momime/common/utils/SpellUtils.java
++++ b/Common/src/main/java/momime/common/utils/SpellUtils.java
+@@ -11,6 +11,7 @@ import momime.common.database.SpellBookSectionID;
+ import momime.common.database.SpellSetting;
+ import momime.common.database.ValidUnitTarget;
+ import momime.common.messages.MemoryMaintainedSpell;
++import momime.common.messages.MomPersistentPlayerPrivateKnowledge;
+ import momime.common.messages.PlayerPick;
+ import momime.common.messages.SpellResearchStatus;
+ import momime.common.messages.SpellResearchStatusID;
+@@ -30,6 +31,16 @@ public interface SpellUtils
+ 	 */
+ 	public SpellResearchStatus findSpellResearchStatus (final List<SpellResearchStatus> spells, final String spellID)
+ 		throws RecordNotFoundException;
++	
++	/**
++	 * In MoM 1.31 the research cost of the Spell of Mastery is reduced by 3,000 for having 11+ books in any one realm, and by half the research cost
++	 * of every spell acquired during the game.  The reduction is stored in the player's private knowledge.  All other spells cost what the database says.
++	 * 
++	 * @param spell Spell definition
++	 * @param priv Private knowledge of the player whose research cost we want
++	 * @return Full research cost of the spell for this player, before any research is put towards it; null if the spell has no research cost
++	 */
++	public Integer getFullResearchCost (final Spell spell, final MomPersistentPlayerPrivateKnowledge priv);
+ 
+ 	/**
+ 	 * @param spell Spell we want to check
+diff --git a/Common/src/main/java/momime/common/utils/SpellUtilsImpl.java b/Common/src/main/java/momime/common/utils/SpellUtilsImpl.java
+index 3b8b2f5e..1f48a8f8 100644
+--- a/Common/src/main/java/momime/common/utils/SpellUtilsImpl.java
++++ b/Common/src/main/java/momime/common/utils/SpellUtilsImpl.java
+@@ -16,6 +16,7 @@ import momime.common.database.SpellBookSectionID;
+ import momime.common.database.SpellSetting;
+ import momime.common.database.ValidUnitTarget;
+ import momime.common.messages.MemoryMaintainedSpell;
++import momime.common.messages.MomPersistentPlayerPrivateKnowledge;
+ import momime.common.messages.PlayerPick;
+ import momime.common.messages.SpellResearchStatus;
+ import momime.common.messages.SpellResearchStatusID;
+@@ -39,6 +40,26 @@ public final class SpellUtilsImpl implements SpellUtils
+ 	
+ 	// Methods dealing with a single spell
+ 
++	/**
++	 * In MoM 1.31 the research cost of the Spell of Mastery is reduced by 3,000 for having 11+ books in any one realm, and by half the research cost
++	 * of every spell acquired during the game.  The reduction is stored in the player's private knowledge.  All other spells cost what the database says.
++	 * 
++	 * @param spell Spell definition
++	 * @param priv Private knowledge of the player whose research cost we want
++	 * @return Full research cost of the spell for this player, before any research is put towards it; null if the spell has no research cost
++	 */
++	@Override
++	public final Integer getFullResearchCost (final Spell spell, final MomPersistentPlayerPrivateKnowledge priv)
++	{
++		Integer researchCost = spell.getResearchCost ();
++		if ((researchCost != null) && (CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY.equals (spell.getSpellID ())) &&
++			(priv != null) && (priv.getSpellOfMasteryResearchCostReduction () != null))
++			
++			researchCost = Math.max (0, researchCost - priv.getSpellOfMasteryResearchCostReduction ());
++		
++		return researchCost;
++	}
++	
+ 	/**
+ 	 * @param spells List of spell research statuses to search
+ 	 * @param spellID Spell ID to search for
+diff --git a/Common/src/main/resources/momime.common.messages/MoMIMEMessages.xsd b/Common/src/main/resources/momime.common.messages/MoMIMEMessages.xsd
+index dedcb2f8..ea4e1aab 100644
+--- a/Common/src/main/resources/momime.common.messages/MoMIMEMessages.xsd
++++ b/Common/src/main/resources/momime.common.messages/MoMIMEMessages.xsd
+@@ -133,6 +133,15 @@ identify them to each other at runtime, e.g. client requests to move hero item n
+ 					<xsd:element minOccurs="1" maxOccurs="1" name="magicPowerDistribution" type="momimemsgs:magicPowerDistribution" />
+ 					<xsd:element minOccurs="1" maxOccurs="1" name="manaSpentOnCastingCurrentSpell" type="momimecommon:spellCastingCost" />
+ 					<xsd:element minOccurs="0" maxOccurs="unbounded" name="spellResearchStatus" type="momimemsgs:spellResearchStatus" />
++					<xsd:element minOccurs="0" maxOccurs="1" name="spellOfMasteryResearchCostReduction" type="xsd:int">
++						<xsd:annotation>
++							<xsd:documentation>How much the research cost of the Spell of Mastery has been reduced for this player.  In MoM 1.31 it starts at 60,000,
++								and is reduced by 3,000 for having 11+ books in any realm, and by half the research cost of every spell acquired during the game
++								(researched, traded, stolen or found as treasure - but not the spells you start the game with).  Kept separately from the
++								spell's remaining research cost so that if research is switched away from it and progress is lost, it goes back to the reduced cost.
++								Missing (e.g. from older saved games) means no reduction.</xsd:documentation>
++						</xsd:annotation>
++					</xsd:element>
+ 					<xsd:element minOccurs="0" maxOccurs="unbounded" name="queuedSpell" type="momimemsgs:queuedSpell">
+ 						<xsd:annotation>
+ 							<xsd:documentation>In simultaneous turns games, spells aren't cast until we hit end turn, but we still need the possibility of casting
+diff --git a/Common/src/main/resources/momime.common.messages/MoMIMEServerToClientMessages.xsd b/Common/src/main/resources/momime.common.messages/MoMIMEServerToClientMessages.xsd
+index 0adf835e..4b04434f 100644
+--- a/Common/src/main/resources/momime.common.messages/MoMIMEServerToClientMessages.xsd
++++ b/Common/src/main/resources/momime.common.messages/MoMIMEServerToClientMessages.xsd
+@@ -799,6 +799,12 @@ randomly pick the 8 further choices of what to research next.  So in that situat
+ 					<xsd:sequence>
+ 						<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
+ 						<xsd:element minOccurs="1" maxOccurs="1" name="remainingResearchCost" type="momimecommon:spellResearchCost" />
++						<xsd:element minOccurs="0" maxOccurs="1" name="spellOfMasteryResearchCostReduction" type="xsd:int">
++							<xsd:annotation>
++								<xsd:documentation>Only sent when the remaining research cost of the Spell of Mastery is being reduced; the new total value for
++									momPersistentPlayerPrivateKnowledge.spellOfMasteryResearchCostReduction, so the client knows the full (reduced) research cost too.</xsd:documentation>
++							</xsd:annotation>
++						</xsd:element>
+ 					</xsd:sequence>
+ 				</xsd:extension>
+ 			</xsd:complexContent>
+diff --git a/Common/src/test/java/momime/common/utils/TestSpellUtilsImpl.java b/Common/src/test/java/momime/common/utils/TestSpellUtilsImpl.java
+index 3a471131..a9946070 100644
+--- a/Common/src/test/java/momime/common/utils/TestSpellUtilsImpl.java
++++ b/Common/src/test/java/momime/common/utils/TestSpellUtilsImpl.java
+@@ -30,6 +30,7 @@ import momime.common.database.SpellSetting;
+ import momime.common.database.UnitEx;
+ import momime.common.database.ValidUnitTarget;
+ import momime.common.messages.MemoryMaintainedSpell;
++import momime.common.messages.MomPersistentPlayerPrivateKnowledge;
+ import momime.common.messages.PlayerPick;
+ import momime.common.messages.SpellResearchStatus;
+ import momime.common.messages.SpellResearchStatusID;
+@@ -1033,4 +1034,39 @@ public final class TestSpellUtilsImpl
+ 		assertEquals ("SR02", spellRanks.get (1));
+ 		assertEquals ("SR03", spellRanks.get (2));
+ 	}
+-}
+\ No newline at end of file
++
++	/**
++	 * Tests the getFullResearchCost method
++	 */
++	@Test
++	public final void testGetFullResearchCost ()
++	{
++		final Spell som = new Spell ();
++		som.setSpellID (CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY);
++		som.setResearchCost (60000);
++		
++		final Spell otherSpell = new Spell ();
++		otherSpell.setSpellID ("SP001");
++		otherSpell.setResearchCost (500);
++		
++		final Spell freeSpell = new Spell ();
++		freeSpell.setSpellID ("SP002");
++		
++		final SpellUtilsImpl utils = new SpellUtilsImpl ();
++		
++		// No reduction (e.g. older saved game)
++		final MomPersistentPlayerPrivateKnowledge priv = new MomPersistentPlayerPrivateKnowledge ();
++		assertEquals (60000, utils.getFullResearchCost (som, priv).intValue ());
++		assertEquals (60000, utils.getFullResearchCost (som, null).intValue ());
++		
++		// Reduction only applies to Spell of Mastery
++		priv.setSpellOfMasteryResearchCostReduction (3500);
++		assertEquals (56500, utils.getFullResearchCost (som, priv).intValue ());
++		assertEquals (500, utils.getFullResearchCost (otherSpell, priv).intValue ());
++		assertNull (utils.getFullResearchCost (freeSpell, priv));
++		
++		// Can't go below zero
++		priv.setSpellOfMasteryResearchCostReduction (70000);
++		assertEquals (0, utils.getFullResearchCost (som, priv).intValue ());
++	}
++}
+diff --git a/Server/src/main/java/momime/server/calculations/ServerResourceCalculationsImpl.java b/Server/src/main/java/momime/server/calculations/ServerResourceCalculationsImpl.java
+index 90308cb1..af3e8dd0 100644
+--- a/Server/src/main/java/momime/server/calculations/ServerResourceCalculationsImpl.java
++++ b/Server/src/main/java/momime/server/calculations/ServerResourceCalculationsImpl.java
+@@ -685,6 +685,9 @@ public final class ServerResourceCalculationsImpl implements ServerResourceCalcu
+ 					spellBeingResarched.setStatus (SpellResearchStatusID.AVAILABLE);
+ 					priv.setSpellIDBeingResearched (null);
+ 
++					// Learning a spell makes the Spell of Mastery cheaper
++					getServerSpellCalculations ().spellAcquiredDuringPlay (player, spellBeingResarched.getSpellID (), db);
++
+ 					// Pick another random spell to add to the 8 spells researchable now
+ 					getServerSpellCalculations ().randomizeSpellsResearchableNow (priv.getSpellResearchStatus (), db);
+ 
+diff --git a/Server/src/main/java/momime/server/calculations/ServerSpellCalculations.java b/Server/src/main/java/momime/server/calculations/ServerSpellCalculations.java
+index a0efc182..1b6365ab 100644
+--- a/Server/src/main/java/momime/server/calculations/ServerSpellCalculations.java
++++ b/Server/src/main/java/momime/server/calculations/ServerSpellCalculations.java
+@@ -2,8 +2,14 @@ package momime.server.calculations;
+ 
+ import java.util.List;
+ 
++import javax.xml.stream.XMLStreamException;
++
++import com.ndg.multiplayer.server.session.PlayerServerDetails;
++
++import jakarta.xml.bind.JAXBException;
+ import momime.common.database.CommonDatabase;
+ import momime.common.database.RecordNotFoundException;
++import momime.common.messages.MomPersistentPlayerPrivateKnowledge;
+ import momime.common.messages.PlayerPick;
+ import momime.common.messages.SpellResearchStatus;
+ 
+@@ -53,4 +59,64 @@ public interface ServerSpellCalculations
+ 	 */
+ 	public List<String> findCheapestSpells (final List<String> spellIDs, final int count, final CommonDatabase db)
+ 		throws RecordNotFoundException;
+-}
+\ No newline at end of file
++
++	/**
++	 * @param priv Private knowledge of the player
++	 * @param db Lookup lists built over the XML database
++	 * @return Full research cost of the Spell of Mastery for this player, i.e. 60,000 less any reductions they've earned, before any research is put towards it
++	 * @throws RecordNotFoundException If the Spell of Mastery can't be found in the database
++	 */
++	public int calculateSpellOfMasteryResearchCost (final MomPersistentPlayerPrivateKnowledge priv, final CommonDatabase db)
++		throws RecordNotFoundException;
++	
++	/**
++	 * Applies the reduction to the Spell of Mastery research cost for having 11 or more books in any one realm.
++	 * Call once at the start of the game, after the player's picks are chosen.
++	 * 
++	 * @param priv Private knowledge of the player
++	 * @param picks Player's picks
++	 * @param db Lookup lists built over the XML database
++	 * @throws RecordNotFoundException If one of the picks or the Spell of Mastery can't be found in the database
++	 */
++	public void applyStartingSpellOfMasteryResearchCostReduction (final MomPersistentPlayerPrivateKnowledge priv, final List<PlayerPick> picks, final CommonDatabase db)
++		throws RecordNotFoundException;
++	
++	/**
++	 * Reduces the research cost of the Spell of Mastery for this player, updating both the stored reduction and the remaining research cost.
++	 * Doesn't tell the client.
++	 * 
++	 * @param priv Private knowledge of the player
++	 * @param reduction Amount to reduce the research cost by
++	 * @return New remaining research cost of the Spell of Mastery; or null if it didn't change, e.g. because the player has already researched it
++	 * @throws RecordNotFoundException If the player has no research status for the Spell of Mastery
++	 */
++	public Integer reduceSpellOfMasteryResearchCost (final MomPersistentPlayerPrivateKnowledge priv, final int reduction)
++		throws RecordNotFoundException;
++	
++	/**
++	 * Call whenever a player acquires a spell during the game - by research, trading, stealing from a wizard's fortress or as treasure - but NOT for
++	 * the spells they start the game with.  In MoM 1.31 this reduces the research cost of the Spell of Mastery by half the acquired spell's research cost.
++	 * If this changes the remaining research cost of the Spell of Mastery, human players are sent the new value.
++	 * 
++	 * @param player Player who acquired the spell
++	 * @param spellID Spell they acquired
++	 * @param db Lookup lists built over the XML database
++	 * @throws RecordNotFoundException If the spell can't be found in the database
++	 * @throws JAXBException If there is a problem sending the reply to the client
++	 * @throws XMLStreamException If there is a problem sending the reply to the client
++	 */
++	public void spellAcquiredDuringPlay (final PlayerServerDetails player, final String spellID, final CommonDatabase db)
++		throws RecordNotFoundException, JAXBException, XMLStreamException;
++	
++	/**
++	 * Tells a human player the remaining research cost of the Spell of Mastery and how much it has been reduced by,
++	 * so the client can show the right total cost and progress.  Does nothing for AI players or if they've already researched it.
++	 * 
++	 * @param player Player to send to
++	 * @throws RecordNotFoundException If the player has no research status for the Spell of Mastery
++	 * @throws JAXBException If there is a problem sending the reply to the client
++	 * @throws XMLStreamException If there is a problem sending the reply to the client
++	 */
++	public void sendSpellOfMasteryResearchCost (final PlayerServerDetails player)
++		throws RecordNotFoundException, JAXBException, XMLStreamException;
++}
+diff --git a/Server/src/main/java/momime/server/calculations/ServerSpellCalculationsImpl.java b/Server/src/main/java/momime/server/calculations/ServerSpellCalculationsImpl.java
+index e190631c..a1a98ad3 100644
+--- a/Server/src/main/java/momime/server/calculations/ServerSpellCalculationsImpl.java
++++ b/Server/src/main/java/momime/server/calculations/ServerSpellCalculationsImpl.java
+@@ -9,8 +9,13 @@ import java.util.Map;
+ import java.util.Set;
+ import java.util.stream.Collectors;
+ 
++import javax.xml.stream.XMLStreamException;
++
++import com.ndg.multiplayer.server.session.PlayerServerDetails;
++import com.ndg.multiplayer.sessionbase.PlayerType;
+ import com.ndg.utils.random.RandomUtils;
+ 
++import jakarta.xml.bind.JAXBException;
+ import momime.common.database.CommonDatabase;
+ import momime.common.database.CommonDatabaseConstants;
+ import momime.common.database.Pick;
+@@ -19,9 +24,11 @@ import momime.common.database.PickTypeCountContainer;
+ import momime.common.database.PickTypeGrantsSpells;
+ import momime.common.database.RecordNotFoundException;
+ import momime.common.database.Spell;
++import momime.common.messages.MomPersistentPlayerPrivateKnowledge;
+ import momime.common.messages.PlayerPick;
+ import momime.common.messages.SpellResearchStatus;
+ import momime.common.messages.SpellResearchStatusID;
++import momime.common.messages.servertoclient.UpdateRemainingResearchCostMessage;
+ import momime.common.utils.SpellUtils;
+ 
+ /**
+@@ -31,6 +38,12 @@ public final class ServerSpellCalculationsImpl implements ServerSpellCalculation
+ {
+ 	/** The number of choices we're offered from which to pick a spell to research */
+ 	private final static int SPELL_COUNT_TO_PICK_RESEARCH_FROM = 8;
++	
++	/** Number of books in any one realm needed to get the Spell of Mastery research cost reduction */
++	private final static int SPELL_OF_MASTERY_BOOKS_FOR_REDUCTION = 11;
++	
++	/** Spell of Mastery research cost reduction for having enough books in any one realm */
++	private final static int SPELL_OF_MASTERY_REDUCTION_FROM_BOOKS = 3000;
+ 
+ 	/** Spell utils */
+ 	private SpellUtils spellUtils;
+@@ -216,6 +229,129 @@ public final class ServerSpellCalculationsImpl implements ServerSpellCalculation
+ 		return cheapestSpells;
+ 	}
+ 	
++	/**
++	 * @param priv Private knowledge of the player
++	 * @param db Lookup lists built over the XML database
++	 * @return Full research cost of the Spell of Mastery for this player, i.e. 60,000 less any reductions they've earned, before any research is put towards it
++	 * @throws RecordNotFoundException If the Spell of Mastery can't be found in the database
++	 */
++	@Override
++	public final int calculateSpellOfMasteryResearchCost (final MomPersistentPlayerPrivateKnowledge priv, final CommonDatabase db)
++		throws RecordNotFoundException
++	{
++		return getSpellUtils ().getFullResearchCost (db.findSpell (CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY, "calculateSpellOfMasteryResearchCost"), priv);
++	}
++	
++	/**
++	 * Applies the reduction to the Spell of Mastery research cost for having 11 or more books in any one realm.
++	 * Call once at the start of the game, after the player's picks are chosen.
++	 * 
++	 * @param priv Private knowledge of the player
++	 * @param picks Player's picks
++	 * @param db Lookup lists built over the XML database
++	 * @throws RecordNotFoundException If one of the picks or the Spell of Mastery can't be found in the database
++	 */
++	@Override
++	public final void applyStartingSpellOfMasteryResearchCostReduction (final MomPersistentPlayerPrivateKnowledge priv, final List<PlayerPick> picks, final CommonDatabase db)
++		throws RecordNotFoundException
++	{
++		boolean enoughBooks = false;
++		for (final PlayerPick pick : picks)
++			if ((pick.getQuantity () >= SPELL_OF_MASTERY_BOOKS_FOR_REDUCTION) &&
++				(CommonDatabaseConstants.PICK_TYPE_ID_SPELL_BOOK.equals (db.findPick (pick.getPickID (), "applyStartingSpellOfMasteryResearchCostReduction").getPickType ())))
++				
++				enoughBooks = true;
++		
++		if (enoughBooks)
++			reduceSpellOfMasteryResearchCost (priv, SPELL_OF_MASTERY_REDUCTION_FROM_BOOKS);
++	}
++	
++	/**
++	 * Reduces the research cost of the Spell of Mastery for this player, updating both the stored reduction and the remaining research cost.
++	 * Doesn't tell the client.
++	 * 
++	 * @param priv Private knowledge of the player
++	 * @param reduction Amount to reduce the research cost by
++	 * @return New remaining research cost of the Spell of Mastery; or null if it didn't change, e.g. because the player has already researched it
++	 * @throws RecordNotFoundException If the player has no research status for the Spell of Mastery
++	 */
++	@Override
++	public final Integer reduceSpellOfMasteryResearchCost (final MomPersistentPlayerPrivateKnowledge priv, final int reduction)
++		throws RecordNotFoundException
++	{
++		Integer newRemainingResearchCost = null;
++		if (reduction > 0)
++		{
++			priv.setSpellOfMasteryResearchCostReduction (((priv.getSpellOfMasteryResearchCostReduction () == null) ? 0 : priv.getSpellOfMasteryResearchCostReduction ()) + reduction);
++			
++			final SpellResearchStatus status = getSpellUtils ().findSpellResearchStatus (priv.getSpellResearchStatus (), CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY);
++			if ((status != null) && (status.getStatus () != SpellResearchStatusID.AVAILABLE) &&
++				(status.getRemainingResearchCost () > 0))
++			{
++				newRemainingResearchCost = Math.max (0, status.getRemainingResearchCost () - reduction);
++				status.setRemainingResearchCost (newRemainingResearchCost);
++			}
++		}
++		
++		return newRemainingResearchCost;
++	}
++	
++	/**
++	 * Call whenever a player acquires a spell during the game - by research, trading, stealing from a wizard's fortress or as treasure - but NOT for
++	 * the spells they start the game with.  In MoM 1.31 this reduces the research cost of the Spell of Mastery by half the acquired spell's research cost.
++	 * If this changes the remaining research cost of the Spell of Mastery, human players are sent the new value.
++	 * 
++	 * @param player Player who acquired the spell
++	 * @param spellID Spell they acquired
++	 * @param db Lookup lists built over the XML database
++	 * @throws RecordNotFoundException If the spell can't be found in the database
++	 * @throws JAXBException If there is a problem sending the reply to the client
++	 * @throws XMLStreamException If there is a problem sending the reply to the client
++	 */
++	@Override
++	public final void spellAcquiredDuringPlay (final PlayerServerDetails player, final String spellID, final CommonDatabase db)
++		throws RecordNotFoundException, JAXBException, XMLStreamException
++	{
++		if (!CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY.equals (spellID))
++		{
++			final Integer researchCost = db.findSpell (spellID, "spellAcquiredDuringPlay").getResearchCost ();
++			if (researchCost != null)
++			{
++				final MomPersistentPlayerPrivateKnowledge priv = (MomPersistentPlayerPrivateKnowledge) player.getPersistentPlayerPrivateKnowledge ();
++				if (reduceSpellOfMasteryResearchCost (priv, researchCost / 2) != null)
++					sendSpellOfMasteryResearchCost (player);
++			}
++		}
++	}
++	
++	/**
++	 * Tells a human player the remaining research cost of the Spell of Mastery and how much it has been reduced by,
++	 * so the client can show the right total cost and progress.  Does nothing for AI players or if they've already researched it.
++	 * 
++	 * @param player Player to send to
++	 * @throws RecordNotFoundException If the player has no research status for the Spell of Mastery
++	 * @throws JAXBException If there is a problem sending the reply to the client
++	 * @throws XMLStreamException If there is a problem sending the reply to the client
++	 */
++	@Override
++	public final void sendSpellOfMasteryResearchCost (final PlayerServerDetails player)
++		throws RecordNotFoundException, JAXBException, XMLStreamException
++	{
++		if (player.getPlayerDescription ().getPlayerType () == PlayerType.HUMAN)
++		{
++			final MomPersistentPlayerPrivateKnowledge priv = (MomPersistentPlayerPrivateKnowledge) player.getPersistentPlayerPrivateKnowledge ();
++			final SpellResearchStatus status = getSpellUtils ().findSpellResearchStatus (priv.getSpellResearchStatus (), CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY);
++			if (status.getStatus () != SpellResearchStatusID.AVAILABLE)
++			{
++				final UpdateRemainingResearchCostMessage msg = new UpdateRemainingResearchCostMessage ();
++				msg.setSpellID (CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY);
++				msg.setRemainingResearchCost (status.getRemainingResearchCost ());
++				msg.setSpellOfMasteryResearchCostReduction (priv.getSpellOfMasteryResearchCostReduction ());
++				player.getConnection ().sendMessageToClient (msg);
++			}
++		}
++	}
++	
+ 	/**
+ 	 * @return Spell utils
+ 	 */
+diff --git a/Server/src/main/java/momime/server/messages/process/RequestResearchSpellMessageImpl.java b/Server/src/main/java/momime/server/messages/process/RequestResearchSpellMessageImpl.java
+index bece03a5..6d5e5f0c 100644
+--- a/Server/src/main/java/momime/server/messages/process/RequestResearchSpellMessageImpl.java
++++ b/Server/src/main/java/momime/server/messages/process/RequestResearchSpellMessageImpl.java
+@@ -10,6 +10,7 @@ import com.ndg.multiplayer.server.session.PlayerServerDetails;
+ import com.ndg.multiplayer.server.session.PostSessionClientToServerMessage;
+ 
+ import jakarta.xml.bind.JAXBException;
++import momime.common.database.CommonDatabaseConstants;
+ import momime.common.database.RecordNotFoundException;
+ import momime.common.database.Spell;
+ import momime.common.database.SwitchResearch;
+@@ -24,6 +25,7 @@ import momime.common.messages.servertoclient.UpdateRemainingResearchCostMessage;
+ import momime.common.utils.KnownWizardUtils;
+ import momime.common.utils.SpellUtils;
+ import momime.server.MomSessionVariables;
++import momime.server.calculations.ServerSpellCalculations;
+ import momime.server.utils.SpellServerUtils;
+ 
+ /**
+@@ -43,6 +45,9 @@ public final class RequestResearchSpellMessageImpl extends RequestResearchSpellM
+ 	/** Methods for finding KnownWizardDetails from the list */
+ 	private KnownWizardUtils knownWizardUtils;
+ 	
++	/** Server-only spell calculations */
++	private ServerSpellCalculations serverSpellCalculations;
++	
+ 	/**
+ 	 * @param thread Thread for the session this message is for; from the thread, the processor can obtain the list of players, sd, gsk, gpl, etc
+ 	 * @param sender Player who sent the message
+@@ -84,12 +89,16 @@ public final class RequestResearchSpellMessageImpl extends RequestResearchSpellM
+ 				final Spell spellPreviouslyBeingResearched = mom.getServerDB ().findSpell (priv.getSpellIDBeingResearched (), "RequestResearchSpellMessageImpl");
+ 				final SpellResearchStatus spellPreviouslyBeingResearchedStatus = getSpellUtils ().findSpellResearchStatus (priv.getSpellResearchStatus (), priv.getSpellIDBeingResearched ());
+ 
+-				spellPreviouslyBeingResearchedStatus.setRemainingResearchCost (spellPreviouslyBeingResearched.getResearchCost ());
++				// Spell of Mastery goes back to its reduced cost, not the full 60,000
++				final int fullResearchCost = CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY.equals (priv.getSpellIDBeingResearched ()) ?
++					getServerSpellCalculations ().calculateSpellOfMasteryResearchCost (priv, mom.getServerDB ()) : spellPreviouslyBeingResearched.getResearchCost ();
++				
++				spellPreviouslyBeingResearchedStatus.setRemainingResearchCost (fullResearchCost);
+ 
+ 				// Lose on client
+ 				final UpdateRemainingResearchCostMessage msg = new UpdateRemainingResearchCostMessage ();
+ 				msg.setSpellID (priv.getSpellIDBeingResearched ());
+-				msg.setRemainingResearchCost (spellPreviouslyBeingResearched.getResearchCost ());
++				msg.setRemainingResearchCost (fullResearchCost);
+ 				sender.getConnection ().sendMessageToClient (msg);
+ 			}
+ 
+@@ -150,4 +159,20 @@ public final class RequestResearchSpellMessageImpl extends RequestResearchSpellM
+ 	{
+ 		knownWizardUtils = k;
+ 	}
+-}
+\ No newline at end of file
++
++	/**
++	 * @return Server-only spell calculations
++	 */
++	public final ServerSpellCalculations getServerSpellCalculations ()
++	{
++		return serverSpellCalculations;
++	}
++
++	/**
++	 * @param calc Server-only spell calculations
++	 */
++	public final void setServerSpellCalculations (final ServerSpellCalculations calc)
++	{
++		serverSpellCalculations = calc;
++	}
++}
+diff --git a/Server/src/main/java/momime/server/process/DiplomacyProcessingImpl.java b/Server/src/main/java/momime/server/process/DiplomacyProcessingImpl.java
+index a64d51d6..6fa0f2ee 100644
+--- a/Server/src/main/java/momime/server/process/DiplomacyProcessingImpl.java
++++ b/Server/src/main/java/momime/server/process/DiplomacyProcessingImpl.java
+@@ -818,6 +818,9 @@ public final class DiplomacyProcessingImpl implements DiplomacyProcessing
+ 		final SpellResearchStatus researchStatus = getSpellUtils ().findSpellResearchStatus (receiverPriv.getSpellResearchStatus (), spellID);
+ 		researchStatus.setStatus (SpellResearchStatusID.AVAILABLE);
+ 		
++		// Learning a spell makes the Spell of Mastery cheaper
++		getServerSpellCalculations ().spellAcquiredDuringPlay (receiver, spellID, mom.getServerDB ());
++		
+ 		// Just in case the donated spell was one of the 8 spells available to research now
+ 		getServerSpellCalculations ().randomizeSpellsResearchableNow (receiverPriv.getSpellResearchStatus (), mom.getServerDB ());
+ 		
+@@ -936,6 +939,10 @@ public final class DiplomacyProcessingImpl implements DiplomacyProcessing
+ 		agreerResearchStatus.setStatus (SpellResearchStatusID.AVAILABLE);
+ 		proposerResearchStatus.setStatus (SpellResearchStatusID.AVAILABLE);
+ 		
++		// Learning a spell makes the Spell of Mastery cheaper
++		getServerSpellCalculations ().spellAcquiredDuringPlay (agreer, agreerWantsSpellID, mom.getServerDB ());
++		getServerSpellCalculations ().spellAcquiredDuringPlay (proposer, proposerWantsSpellID, mom.getServerDB ());
++		
+ 		// Just in case the donated spell was one of the 8 spells available to research now
+ 		getServerSpellCalculations ().randomizeSpellsResearchableNow (agreerPriv.getSpellResearchStatus (), mom.getServerDB ());
+ 		getServerSpellCalculations ().randomizeSpellsResearchableNow (proposerPriv.getSpellResearchStatus (), mom.getServerDB ());
+diff --git a/Server/src/main/java/momime/server/process/PlayerMessageProcessingImpl.java b/Server/src/main/java/momime/server/process/PlayerMessageProcessingImpl.java
+index 1dab0b86..d3fa3455 100644
+--- a/Server/src/main/java/momime/server/process/PlayerMessageProcessingImpl.java
++++ b/Server/src/main/java/momime/server/process/PlayerMessageProcessingImpl.java
+@@ -536,6 +536,9 @@ public final class PlayerMessageProcessingImpl implements PlayerMessageProcessin
+ 				// Give player 8 spells to pick from, out of all those we'll eventually be able to research
+ 				getServerSpellCalculations ().randomizeSpellsResearchableNow (priv.getSpellResearchStatus (), mom.getServerDB ());
+ 
++				// Spell of Mastery is cheaper with 11+ books in any one realm.  Note the spells we start with do NOT reduce its cost.
++				getServerSpellCalculations ().applyStartingSpellOfMasteryResearchCostReduction (priv, thisWizard.getPick (), mom.getServerDB ());
++
+ 				// Send players' spells to them (and them only)
+ 				if (thisPlayer.getPlayerDescription ().getPlayerType () == PlayerType.HUMAN)
+ 				{
+@@ -543,6 +546,10 @@ public final class PlayerMessageProcessingImpl implements PlayerMessageProcessin
+ 					spellsMsg.getSpellResearchStatus ().addAll (priv.getSpellResearchStatus ());
+ 					thisPlayer.getConnection ().sendMessageToClient (spellsMsg);
+ 				}
++
++				// Also need to tell the client about the reduced total cost of the Spell of Mastery, not just its reduced remaining cost
++				if (priv.getSpellOfMasteryResearchCostReduction () != null)
++					getServerSpellCalculations ().sendSpellOfMasteryResearchCost (thisPlayer);
+ 			}
+ 
+ 			// Add monsters in nodes/lairs/towers - can only do this after we've added the players
+diff --git a/Server/src/main/java/momime/server/process/SpellProcessingImpl.java b/Server/src/main/java/momime/server/process/SpellProcessingImpl.java
+index d297bb92..eb432319 100644
+--- a/Server/src/main/java/momime/server/process/SpellProcessingImpl.java
++++ b/Server/src/main/java/momime/server/process/SpellProcessingImpl.java
+@@ -1866,6 +1866,9 @@ public final class SpellProcessingImpl implements SpellProcessing
+ 				giveToPriv.setSpellIDBeingResearched (null);
+ 			
+ 			spell.setStatus (SpellResearchStatusID.AVAILABLE);
++			
++			// Learning a spell makes the Spell of Mastery cheaper
++			getServerSpellCalculations ().spellAcquiredDuringPlay (giveTo, spell.getSpellID (), db);
+ 		}
+ 		
+ 		// If any spells were in the 8 that could be researched now, then need to pull in some more
+diff --git a/Server/src/main/java/momime/server/utils/TreasureUtilsImpl.java b/Server/src/main/java/momime/server/utils/TreasureUtilsImpl.java
+index 683dfb59..8b155f49 100644
+--- a/Server/src/main/java/momime/server/utils/TreasureUtilsImpl.java
++++ b/Server/src/main/java/momime/server/utils/TreasureUtilsImpl.java
+@@ -360,6 +360,9 @@ public final class TreasureUtilsImpl implements TreasureUtils
+ 
+ 					spell.setStatus (SpellResearchStatusID.AVAILABLE);
+ 					reward.getSpellID ().add (spell.getSpellID ());
++					
++					// Learning a spell makes the Spell of Mastery cheaper
++					getServerSpellCalculations ().spellAcquiredDuringPlay (player, spell.getSpellID (), mom.getServerDB ());
+ 					remainingTreasureValue = remainingTreasureValue - spellRank.getTreasureRewardCost ();
+ 					
+ 					// If the spell happened to be the one we were researching, then blank research out (client does this based on FullSpellListMessage)
+@@ -620,7 +623,16 @@ public final class TreasureUtilsImpl implements TreasureUtils
+ 					
+ 					// If the pick grants any spells (Artificer) then learn them
+ 					for (final String freeSpellID : pick.getPickFreeSpell ())
+-						getSpellUtils ().findSpellResearchStatus (priv.getSpellResearchStatus (), freeSpellID).setStatus (SpellResearchStatusID.AVAILABLE);
++					{
++						final SpellResearchStatus freeSpell = getSpellUtils ().findSpellResearchStatus (priv.getSpellResearchStatus (), freeSpellID);
++						if (freeSpell.getStatus () != SpellResearchStatusID.AVAILABLE)
++						{
++							freeSpell.setStatus (SpellResearchStatusID.AVAILABLE);
++							
++							// Learning a spell makes the Spell of Mastery cheaper
++							getServerSpellCalculations ().spellAcquiredDuringPlay (player, freeSpellID, mom.getServerDB ());
++						}
++					}
+ 				}
+ 			}
+ 		}
+diff --git a/Server/src/main/resources/momime.server.spring/momime-server-beans.xml b/Server/src/main/resources/momime.server.spring/momime-server-beans.xml
+index 8e8dc125..117b91ce 100644
+--- a/Server/src/main/resources/momime.server.spring/momime-server-beans.xml
++++ b/Server/src/main/resources/momime.server.spring/momime-server-beans.xml
+@@ -198,6 +198,7 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
+ 		<property name="spellUtils" ref="spellUtils" />
+ 		<property name="spellServerUtils" ref="spellServerUtils" />
+ 		<property name="knownWizardUtils" ref="knownWizardUtils" />
++		<property name="serverSpellCalculations" ref="serverSpellCalculations" />
+ 	</bean>
+ 	
+ 	<bean id="requestCastSpellMessage" class="momime.server.messages.process.RequestCastSpellMessageImpl" scope="prototype">
+diff --git a/Server/src/test/java/momime/server/calculations/TestServerResourceCalculationsImpl.java b/Server/src/test/java/momime/server/calculations/TestServerResourceCalculationsImpl.java
+index d1cece09..504d1e3d 100644
+--- a/Server/src/test/java/momime/server/calculations/TestServerResourceCalculationsImpl.java
++++ b/Server/src/test/java/momime/server/calculations/TestServerResourceCalculationsImpl.java
+@@ -1001,6 +1001,7 @@ public final class TestServerResourceCalculationsImpl extends ServerTestData
+ 		}
+ 
+ 		verify (serverSpellCalculations).randomizeSpellsResearchableNow (priv.getSpellResearchStatus (), db);		// <---
++		verify (serverSpellCalculations).spellAcquiredDuringPlay (player, "SP002", db);		// Researching a spell reduces Spell of Mastery research cost
+ 		
+ 		verifyNoMoreInteractions (serverSpellCalculations);
+ 	}
+diff --git a/Server/src/test/java/momime/server/calculations/TestServerSpellCalculationsImpl.java b/Server/src/test/java/momime/server/calculations/TestServerSpellCalculationsImpl.java
+index 57d8046d..8947caae 100644
+--- a/Server/src/test/java/momime/server/calculations/TestServerSpellCalculationsImpl.java
++++ b/Server/src/test/java/momime/server/calculations/TestServerSpellCalculationsImpl.java
+@@ -1,8 +1,10 @@
+ package momime.server.calculations;
+ 
+ import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertNull;
+ import static org.junit.jupiter.api.Assertions.fail;
+ import static org.mockito.Mockito.mock;
++import static org.mockito.Mockito.when;
+ 
+ import java.util.ArrayList;
+ import java.util.List;
+@@ -11,14 +13,22 @@ import org.junit.jupiter.api.Test;
+ import org.junit.jupiter.api.extension.ExtendWith;
+ import org.mockito.junit.jupiter.MockitoExtension;
+ 
++import com.ndg.multiplayer.server.session.PlayerServerDetails;
++import com.ndg.multiplayer.sessionbase.PlayerDescription;
++import com.ndg.multiplayer.sessionbase.PlayerType;
+ import com.ndg.utils.random.RandomUtils;
+ 
+ import momime.common.database.CommonDatabase;
++import momime.common.database.CommonDatabaseConstants;
++import momime.common.database.Pick;
+ import momime.common.database.Spell;
++import momime.common.messages.MomPersistentPlayerPrivateKnowledge;
+ import momime.common.messages.PlayerPick;
+ import momime.common.messages.SpellResearchStatus;
+ import momime.common.messages.SpellResearchStatusID;
++import momime.common.messages.servertoclient.UpdateRemainingResearchCostMessage;
+ import momime.common.utils.SpellUtilsImpl;
++import momime.server.DummyServerToClientConnection;
+ import momime.server.ServerTestData;
+ 
+ /**
+@@ -219,4 +229,174 @@ public final class TestServerSpellCalculationsImpl extends ServerTestData
+ 		assertEquals (SpellResearchStatusID.UNAVAILABLE, spells.get (18).getStatus ());
+ 		assertEquals (SpellResearchStatusID.UNAVAILABLE, spells.get (19).getStatus ());
+ 	}
+-}
+\ No newline at end of file
++
++	/**
++	 * @param status Research status of the Spell of Mastery
++	 * @param remainingResearchCost Remaining research cost of the Spell of Mastery
++	 * @return Player knowledge with only the Spell of Mastery in their spell list
++	 */
++	private final MomPersistentPlayerPrivateKnowledge createSpellOfMasteryKnowledge (final SpellResearchStatusID status, final int remainingResearchCost)
++	{
++		final SpellResearchStatus som = new SpellResearchStatus ();
++		som.setSpellID (CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY);
++		som.setStatus (status);
++		som.setRemainingResearchCost (remainingResearchCost);
++		
++		final MomPersistentPlayerPrivateKnowledge priv = new MomPersistentPlayerPrivateKnowledge ();
++		priv.getSpellResearchStatus ().add (som);
++		return priv;
++	}
++	
++	/**
++	 * @return Calculations object to test
++	 */
++	private final ServerSpellCalculationsImpl createCalc ()
++	{
++		final ServerSpellCalculationsImpl calc = new ServerSpellCalculationsImpl ();
++		calc.setSpellUtils (new SpellUtilsImpl ());
++		return calc;
++	}
++	
++	/**
++	 * Tests the reduceSpellOfMasteryResearchCost method
++	 * @throws Exception If there is a problem
++	 */
++	@Test
++	public final void testReduceSpellOfMasteryResearchCost () throws Exception
++	{
++		final ServerSpellCalculationsImpl calc = createCalc ();
++		
++		// Not researched yet, including part way through researching it
++		final MomPersistentPlayerPrivateKnowledge priv = createSpellOfMasteryKnowledge (SpellResearchStatusID.RESEARCHABLE_NOW, 50000);
++		assertEquals (49500, calc.reduceSpellOfMasteryResearchCost (priv, 500).intValue ());
++		assertEquals (49500, priv.getSpellResearchStatus ().get (0).getRemainingResearchCost ());
++		assertEquals (500, priv.getSpellOfMasteryResearchCostReduction ().intValue ());
++		
++		// Further reductions add up, and remaining cost can't go below zero
++		assertEquals (0, calc.reduceSpellOfMasteryResearchCost (priv, 60000).intValue ());
++		assertEquals (0, priv.getSpellResearchStatus ().get (0).getRemainingResearchCost ());
++		assertEquals (60500, priv.getSpellOfMasteryResearchCostReduction ().intValue ());
++		
++		// Nothing to reduce if already researched
++		final MomPersistentPlayerPrivateKnowledge known = createSpellOfMasteryKnowledge (SpellResearchStatusID.AVAILABLE, 0);
++		assertNull (calc.reduceSpellOfMasteryResearchCost (known, 500));
++	}
++	
++	/**
++	 * Tests the calculateSpellOfMasteryResearchCost method
++	 * @throws Exception If there is a problem
++	 */
++	@Test
++	public final void testCalculateSpellOfMasteryResearchCost () throws Exception
++	{
++		final Spell somDef = new Spell ();
++		somDef.setSpellID (CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY);
++		somDef.setResearchCost (60000);
++		
++		final CommonDatabase db = mock (CommonDatabase.class);
++		when (db.findSpell (CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY, "calculateSpellOfMasteryResearchCost")).thenReturn (somDef);
++		
++		final ServerSpellCalculationsImpl calc = createCalc ();
++		
++		// No reduction (e.g. older saved game)
++		final MomPersistentPlayerPrivateKnowledge priv = new MomPersistentPlayerPrivateKnowledge ();
++		assertEquals (60000, calc.calculateSpellOfMasteryResearchCost (priv, db));
++		
++		// With reduction
++		priv.setSpellOfMasteryResearchCostReduction (3500);
++		assertEquals (56500, calc.calculateSpellOfMasteryResearchCost (priv, db));
++		
++		// Can't go below zero
++		priv.setSpellOfMasteryResearchCostReduction (70000);
++		assertEquals (0, calc.calculateSpellOfMasteryResearchCost (priv, db));
++	}
++	
++	/**
++	 * Tests the applyStartingSpellOfMasteryResearchCostReduction method
++	 * @throws Exception If there is a problem
++	 */
++	@Test
++	public final void testApplyStartingSpellOfMasteryResearchCostReduction () throws Exception
++	{
++		final Pick deathBook = new Pick ();
++		deathBook.setPickType (CommonDatabaseConstants.PICK_TYPE_ID_SPELL_BOOK);
++		
++		final CommonDatabase db = mock (CommonDatabase.class);
++		when (db.findPick ("MB02", "applyStartingSpellOfMasteryResearchCostReduction")).thenReturn (deathBook);
++		
++		final ServerSpellCalculationsImpl calc = createCalc ();
++		
++		// 10 + 1 books is not 11 in any one realm; picks with fewer than 11 (including retorts) are never even looked up
++		final PlayerPick tenLife = new PlayerPick ();
++		tenLife.setPickID ("MB01");
++		tenLife.setQuantity (10);
++		
++		final PlayerPick oneDeath = new PlayerPick ();
++		oneDeath.setPickID ("MB02");
++		oneDeath.setQuantity (1);
++		
++		final PlayerPick retort = new PlayerPick ();
++		retort.setPickID ("RT01");
++		retort.setQuantity (1);
++		
++		final MomPersistentPlayerPrivateKnowledge priv = createSpellOfMasteryKnowledge (SpellResearchStatusID.RESEARCHABLE, 60000);
++		calc.applyStartingSpellOfMasteryResearchCostReduction (priv, List.of (tenLife, oneDeath, retort), db);
++		assertEquals (60000, priv.getSpellResearchStatus ().get (0).getRemainingResearchCost ());
++		assertNull (priv.getSpellOfMasteryResearchCostReduction ());
++		
++		// 11 in one realm
++		final PlayerPick elevenDeath = new PlayerPick ();
++		elevenDeath.setPickID ("MB02");
++		elevenDeath.setQuantity (11);
++		
++		calc.applyStartingSpellOfMasteryResearchCostReduction (priv, List.of (elevenDeath, retort), db);
++		assertEquals (57000, priv.getSpellResearchStatus ().get (0).getRemainingResearchCost ());
++		assertEquals (3000, priv.getSpellOfMasteryResearchCostReduction ().intValue ());
++	}
++	
++	/**
++	 * Tests the spellAcquiredDuringPlay method
++	 * @throws Exception If there is a problem
++	 */
++	@Test
++	public final void testSpellAcquiredDuringPlay () throws Exception
++	{
++		final Spell spellDef = new Spell ();
++		spellDef.setResearchCost (1001);
++		
++		final Spell freeSpellDef = new Spell ();
++		
++		final CommonDatabase db = mock (CommonDatabase.class);
++		when (db.findSpell ("SP001", "spellAcquiredDuringPlay")).thenReturn (spellDef);
++		when (db.findSpell ("SP002", "spellAcquiredDuringPlay")).thenReturn (freeSpellDef);
++		
++		// Human player
++		final PlayerDescription pd = new PlayerDescription ();
++		pd.setPlayerType (PlayerType.HUMAN);
++		
++		final MomPersistentPlayerPrivateKnowledge priv = createSpellOfMasteryKnowledge (SpellResearchStatusID.RESEARCHABLE, 60000);
++		final PlayerServerDetails player = new PlayerServerDetails (pd, null, priv, null, null);
++		
++		final DummyServerToClientConnection msgs = new DummyServerToClientConnection ();
++		player.setConnection (msgs);
++		
++		final ServerSpellCalculationsImpl calc = createCalc ();
++		
++		// Half the research cost, rounded down
++		calc.spellAcquiredDuringPlay (player, "SP001", db);
++		assertEquals (59500, priv.getSpellResearchStatus ().get (0).getRemainingResearchCost ());
++		assertEquals (500, priv.getSpellOfMasteryResearchCostReduction ().intValue ());
++		
++		assertEquals (1, msgs.getMessages ().size ());
++		final UpdateRemainingResearchCostMessage msg = (UpdateRemainingResearchCostMessage) msgs.getMessages ().get (0);
++		assertEquals (CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY, msg.getSpellID ());
++		assertEquals (59500, msg.getRemainingResearchCost ());
++		assertEquals (500, msg.getSpellOfMasteryResearchCostReduction ().intValue ());
++		
++		// Spells with no research cost, and the Spell of Mastery itself, make no difference
++		calc.spellAcquiredDuringPlay (player, "SP002", db);
++		calc.spellAcquiredDuringPlay (player, CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY, db);
++		assertEquals (59500, priv.getSpellResearchStatus ().get (0).getRemainingResearchCost ());
++		assertEquals (1, msgs.getMessages ().size ());
++	}
++}

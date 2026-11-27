@@ -9,8 +9,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.xml.stream.XMLStreamException;
+
+import com.ndg.multiplayer.server.session.PlayerServerDetails;
+import com.ndg.multiplayer.sessionbase.PlayerType;
 import com.ndg.utils.random.RandomUtils;
 
+import jakarta.xml.bind.JAXBException;
 import momime.common.database.CommonDatabase;
 import momime.common.database.CommonDatabaseConstants;
 import momime.common.database.Pick;
@@ -19,9 +24,11 @@ import momime.common.database.PickTypeCountContainer;
 import momime.common.database.PickTypeGrantsSpells;
 import momime.common.database.RecordNotFoundException;
 import momime.common.database.Spell;
+import momime.common.messages.MomPersistentPlayerPrivateKnowledge;
 import momime.common.messages.PlayerPick;
 import momime.common.messages.SpellResearchStatus;
 import momime.common.messages.SpellResearchStatusID;
+import momime.common.messages.servertoclient.UpdateRemainingResearchCostMessage;
 import momime.common.utils.SpellUtils;
 
 /**
@@ -31,6 +38,12 @@ public final class ServerSpellCalculationsImpl implements ServerSpellCalculation
 {
 	/** The number of choices we're offered from which to pick a spell to research */
 	private final static int SPELL_COUNT_TO_PICK_RESEARCH_FROM = 8;
+	
+	/** Number of books in any one realm needed to get the Spell of Mastery research cost reduction */
+	private final static int SPELL_OF_MASTERY_BOOKS_FOR_REDUCTION = 11;
+	
+	/** Spell of Mastery research cost reduction for having enough books in any one realm */
+	private final static int SPELL_OF_MASTERY_REDUCTION_FROM_BOOKS = 3000;
 
 	/** Spell utils */
 	private SpellUtils spellUtils;
@@ -214,6 +227,129 @@ public final class ServerSpellCalculationsImpl implements ServerSpellCalculation
 			cheapestSpells.remove (count);
 		
 		return cheapestSpells;
+	}
+	
+	/**
+	 * @param priv Private knowledge of the player
+	 * @param db Lookup lists built over the XML database
+	 * @return Full research cost of the Spell of Mastery for this player, i.e. 60,000 less any reductions they've earned, before any research is put towards it
+	 * @throws RecordNotFoundException If the Spell of Mastery can't be found in the database
+	 */
+	@Override
+	public final int calculateSpellOfMasteryResearchCost (final MomPersistentPlayerPrivateKnowledge priv, final CommonDatabase db)
+		throws RecordNotFoundException
+	{
+		return getSpellUtils ().getFullResearchCost (db.findSpell (CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY, "calculateSpellOfMasteryResearchCost"), priv);
+	}
+	
+	/**
+	 * Applies the reduction to the Spell of Mastery research cost for having 11 or more books in any one realm.
+	 * Call once at the start of the game, after the player's picks are chosen.
+	 * 
+	 * @param priv Private knowledge of the player
+	 * @param picks Player's picks
+	 * @param db Lookup lists built over the XML database
+	 * @throws RecordNotFoundException If one of the picks or the Spell of Mastery can't be found in the database
+	 */
+	@Override
+	public final void applyStartingSpellOfMasteryResearchCostReduction (final MomPersistentPlayerPrivateKnowledge priv, final List<PlayerPick> picks, final CommonDatabase db)
+		throws RecordNotFoundException
+	{
+		boolean enoughBooks = false;
+		for (final PlayerPick pick : picks)
+			if ((pick.getQuantity () >= SPELL_OF_MASTERY_BOOKS_FOR_REDUCTION) &&
+				(CommonDatabaseConstants.PICK_TYPE_ID_SPELL_BOOK.equals (db.findPick (pick.getPickID (), "applyStartingSpellOfMasteryResearchCostReduction").getPickType ())))
+				
+				enoughBooks = true;
+		
+		if (enoughBooks)
+			reduceSpellOfMasteryResearchCost (priv, SPELL_OF_MASTERY_REDUCTION_FROM_BOOKS);
+	}
+	
+	/**
+	 * Reduces the research cost of the Spell of Mastery for this player, updating both the stored reduction and the remaining research cost.
+	 * Doesn't tell the client.
+	 * 
+	 * @param priv Private knowledge of the player
+	 * @param reduction Amount to reduce the research cost by
+	 * @return New remaining research cost of the Spell of Mastery; or null if it didn't change, e.g. because the player has already researched it
+	 * @throws RecordNotFoundException If the player has no research status for the Spell of Mastery
+	 */
+	@Override
+	public final Integer reduceSpellOfMasteryResearchCost (final MomPersistentPlayerPrivateKnowledge priv, final int reduction)
+		throws RecordNotFoundException
+	{
+		Integer newRemainingResearchCost = null;
+		if (reduction > 0)
+		{
+			priv.setSpellOfMasteryResearchCostReduction (((priv.getSpellOfMasteryResearchCostReduction () == null) ? 0 : priv.getSpellOfMasteryResearchCostReduction ()) + reduction);
+			
+			final SpellResearchStatus status = getSpellUtils ().findSpellResearchStatus (priv.getSpellResearchStatus (), CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY);
+			if ((status != null) && (status.getStatus () != SpellResearchStatusID.AVAILABLE) &&
+				(status.getRemainingResearchCost () > 0))
+			{
+				newRemainingResearchCost = Math.max (0, status.getRemainingResearchCost () - reduction);
+				status.setRemainingResearchCost (newRemainingResearchCost);
+			}
+		}
+		
+		return newRemainingResearchCost;
+	}
+	
+	/**
+	 * Call whenever a player acquires a spell during the game - by research, trading, stealing from a wizard's fortress or as treasure - but NOT for
+	 * the spells they start the game with.  In MoM 1.31 this reduces the research cost of the Spell of Mastery by half the acquired spell's research cost.
+	 * If this changes the remaining research cost of the Spell of Mastery, human players are sent the new value.
+	 * 
+	 * @param player Player who acquired the spell
+	 * @param spellID Spell they acquired
+	 * @param db Lookup lists built over the XML database
+	 * @throws RecordNotFoundException If the spell can't be found in the database
+	 * @throws JAXBException If there is a problem sending the reply to the client
+	 * @throws XMLStreamException If there is a problem sending the reply to the client
+	 */
+	@Override
+	public final void spellAcquiredDuringPlay (final PlayerServerDetails player, final String spellID, final CommonDatabase db)
+		throws RecordNotFoundException, JAXBException, XMLStreamException
+	{
+		if (!CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY.equals (spellID))
+		{
+			final Integer researchCost = db.findSpell (spellID, "spellAcquiredDuringPlay").getResearchCost ();
+			if (researchCost != null)
+			{
+				final MomPersistentPlayerPrivateKnowledge priv = (MomPersistentPlayerPrivateKnowledge) player.getPersistentPlayerPrivateKnowledge ();
+				if (reduceSpellOfMasteryResearchCost (priv, researchCost / 2) != null)
+					sendSpellOfMasteryResearchCost (player);
+			}
+		}
+	}
+	
+	/**
+	 * Tells a human player the remaining research cost of the Spell of Mastery and how much it has been reduced by,
+	 * so the client can show the right total cost and progress.  Does nothing for AI players or if they've already researched it.
+	 * 
+	 * @param player Player to send to
+	 * @throws RecordNotFoundException If the player has no research status for the Spell of Mastery
+	 * @throws JAXBException If there is a problem sending the reply to the client
+	 * @throws XMLStreamException If there is a problem sending the reply to the client
+	 */
+	@Override
+	public final void sendSpellOfMasteryResearchCost (final PlayerServerDetails player)
+		throws RecordNotFoundException, JAXBException, XMLStreamException
+	{
+		if (player.getPlayerDescription ().getPlayerType () == PlayerType.HUMAN)
+		{
+			final MomPersistentPlayerPrivateKnowledge priv = (MomPersistentPlayerPrivateKnowledge) player.getPersistentPlayerPrivateKnowledge ();
+			final SpellResearchStatus status = getSpellUtils ().findSpellResearchStatus (priv.getSpellResearchStatus (), CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY);
+			if (status.getStatus () != SpellResearchStatusID.AVAILABLE)
+			{
+				final UpdateRemainingResearchCostMessage msg = new UpdateRemainingResearchCostMessage ();
+				msg.setSpellID (CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY);
+				msg.setRemainingResearchCost (status.getRemainingResearchCost ());
+				msg.setSpellOfMasteryResearchCostReduction (priv.getSpellOfMasteryResearchCostReduction ());
+				player.getConnection ().sendMessageToClient (msg);
+			}
+		}
 	}
 	
 	/**

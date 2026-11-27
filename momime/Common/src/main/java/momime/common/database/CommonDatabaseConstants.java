@@ -89,6 +89,9 @@ public final class CommonDatabaseConstants
 	
 	/** Death books */
 	public final static String PICK_ID_DEATH_BOOK = "MB02";
+
+	/** Pick type for spell books (as opposed to retorts) */
+	public final static String PICK_TYPE_ID_SPELL_BOOK = "B";
 	
 	// retorts
 

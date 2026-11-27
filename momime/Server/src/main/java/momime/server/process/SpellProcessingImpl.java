@@ -1866,6 +1866,9 @@ public final class SpellProcessingImpl implements SpellProcessing
 				giveToPriv.setSpellIDBeingResearched (null);
 			
 			spell.setStatus (SpellResearchStatusID.AVAILABLE);
+			
+			// Learning a spell makes the Spell of Mastery cheaper
+			getServerSpellCalculations ().spellAcquiredDuringPlay (giveTo, spell.getSpellID (), db);
 		}
 		
 		// If any spells were in the 8 that could be researched now, then need to pull in some more

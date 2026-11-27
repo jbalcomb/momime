@@ -133,6 +133,15 @@ identify them to each other at runtime, e.g. client requests to move hero item n
 					<xsd:element minOccurs="1" maxOccurs="1" name="magicPowerDistribution" type="momimemsgs:magicPowerDistribution" />
 					<xsd:element minOccurs="1" maxOccurs="1" name="manaSpentOnCastingCurrentSpell" type="momimecommon:spellCastingCost" />
 					<xsd:element minOccurs="0" maxOccurs="unbounded" name="spellResearchStatus" type="momimemsgs:spellResearchStatus" />
+					<xsd:element minOccurs="0" maxOccurs="1" name="spellOfMasteryResearchCostReduction" type="xsd:int">
+						<xsd:annotation>
+							<xsd:documentation>How much the research cost of the Spell of Mastery has been reduced for this player.  In MoM 1.31 it starts at 60,000,
+								and is reduced by 3,000 for having 11+ books in any realm, and by half the research cost of every spell acquired during the game
+								(researched, traded, stolen or found as treasure - but not the spells you start the game with).  Kept separately from the
+								spell's remaining research cost so that if research is switched away from it and progress is lost, it goes back to the reduced cost.
+								Missing (e.g. from older saved games) means no reduction.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
 					<xsd:element minOccurs="0" maxOccurs="unbounded" name="queuedSpell" type="momimemsgs:queuedSpell">
 						<xsd:annotation>
 							<xsd:documentation>In simultaneous turns games, spells aren't cast until we hit end turn, but we still need the possibility of casting

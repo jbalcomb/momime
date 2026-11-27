@@ -719,7 +719,7 @@ public final class SpellBookNewUI extends MomClientFrameUI
 														getClient ().getOurPersistentPlayerPrivateKnowledge ().getSpellIDBeingResearched ());
 													
 													// If we've made no progress researching the old spell, then we can switch with no penalty
-													if ((oldResearchStatus.getRemainingResearchCost () == oldSpell.getResearchCost ()) &&
+													if ((oldResearchStatus.getRemainingResearchCost () == getSpellUtils ().getFullResearchCost (oldSpell, getClient ().getOurPersistentPlayerPrivateKnowledge ())) &&
 														(getClient ().getSessionDescription ().getSpellSetting ().getSwitchResearch () != SwitchResearch.DISALLOWED))
 														sendMessage = true;
 													

@@ -658,7 +658,7 @@ public final class MagicSlidersUI extends MomClientFrameUI
 				
 					final SpellResearchStatus researchStatus = getSpellUtils ().findSpellResearchStatus (getClient ().getOurPersistentPlayerPrivateKnowledge ().getSpellResearchStatus (),
 						getClient ().getOurPersistentPlayerPrivateKnowledge ().getSpellIDBeingResearched ());
-					final int totalResearchCost = spell.getResearchCost ();
+					final int totalResearchCost = getSpellUtils ().getFullResearchCost (spell, getClient ().getOurPersistentPlayerPrivateKnowledge ());
 				
 					researchPerTurn.setMaximum (totalResearchCost);
 					researchPerTurn.setValue (totalResearchCost - researchStatus.getRemainingResearchCost ());

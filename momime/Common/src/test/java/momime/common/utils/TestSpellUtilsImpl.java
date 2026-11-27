@@ -30,6 +30,7 @@ import momime.common.database.SpellSetting;
 import momime.common.database.UnitEx;
 import momime.common.database.ValidUnitTarget;
 import momime.common.messages.MemoryMaintainedSpell;
+import momime.common.messages.MomPersistentPlayerPrivateKnowledge;
 import momime.common.messages.PlayerPick;
 import momime.common.messages.SpellResearchStatus;
 import momime.common.messages.SpellResearchStatusID;
@@ -1032,5 +1033,40 @@ public final class TestSpellUtilsImpl
 		assertEquals ("SR01", spellRanks.get (0));
 		assertEquals ("SR02", spellRanks.get (1));
 		assertEquals ("SR03", spellRanks.get (2));
+	}
+
+	/**
+	 * Tests the getFullResearchCost method
+	 */
+	@Test
+	public final void testGetFullResearchCost ()
+	{
+		final Spell som = new Spell ();
+		som.setSpellID (CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY);
+		som.setResearchCost (60000);
+		
+		final Spell otherSpell = new Spell ();
+		otherSpell.setSpellID ("SP001");
+		otherSpell.setResearchCost (500);
+		
+		final Spell freeSpell = new Spell ();
+		freeSpell.setSpellID ("SP002");
+		
+		final SpellUtilsImpl utils = new SpellUtilsImpl ();
+		
+		// No reduction (e.g. older saved game)
+		final MomPersistentPlayerPrivateKnowledge priv = new MomPersistentPlayerPrivateKnowledge ();
+		assertEquals (60000, utils.getFullResearchCost (som, priv).intValue ());
+		assertEquals (60000, utils.getFullResearchCost (som, null).intValue ());
+		
+		// Reduction only applies to Spell of Mastery
+		priv.setSpellOfMasteryResearchCostReduction (3500);
+		assertEquals (56500, utils.getFullResearchCost (som, priv).intValue ());
+		assertEquals (500, utils.getFullResearchCost (otherSpell, priv).intValue ());
+		assertNull (utils.getFullResearchCost (freeSpell, priv));
+		
+		// Can't go below zero
+		priv.setSpellOfMasteryResearchCostReduction (70000);
+		assertEquals (0, utils.getFullResearchCost (som, priv).intValue ());
 	}
 }

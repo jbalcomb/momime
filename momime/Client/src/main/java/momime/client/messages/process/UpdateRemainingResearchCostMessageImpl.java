@@ -44,6 +44,10 @@ public final class UpdateRemainingResearchCostMessageImpl extends UpdateRemainin
 		getSpellUtils ().findSpellResearchStatus (getClient ().getOurPersistentPlayerPrivateKnowledge ().getSpellResearchStatus (),
 			getSpellID ()).setRemainingResearchCost (getRemainingResearchCost ());
 		
+		// Spell of Mastery's full research cost is reduced as we learn spells
+		if (getSpellOfMasteryResearchCostReduction () != null)
+			getClient ().getOurPersistentPlayerPrivateKnowledge ().setSpellOfMasteryResearchCostReduction (getSpellOfMasteryResearchCostReduction ());
+		
 		// Show the reduced value in the spell book research pages
 		getSpellBookUI ().languageOrPageChanged ();
 		

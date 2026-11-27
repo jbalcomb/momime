@@ -198,6 +198,7 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
 		<property name="spellUtils" ref="spellUtils" />
 		<property name="spellServerUtils" ref="spellServerUtils" />
 		<property name="knownWizardUtils" ref="knownWizardUtils" />
+		<property name="serverSpellCalculations" ref="serverSpellCalculations" />
 	</bean>
 	
 	<bean id="requestCastSpellMessage" class="momime.server.messages.process.RequestCastSpellMessageImpl" scope="prototype">

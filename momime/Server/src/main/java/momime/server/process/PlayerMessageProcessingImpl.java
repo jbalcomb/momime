@@ -536,6 +536,9 @@ public final class PlayerMessageProcessingImpl implements PlayerMessageProcessin
 				// Give player 8 spells to pick from, out of all those we'll eventually be able to research
 				getServerSpellCalculations ().randomizeSpellsResearchableNow (priv.getSpellResearchStatus (), mom.getServerDB ());
 
+				// Spell of Mastery is cheaper with 11+ books in any one realm.  Note the spells we start with do NOT reduce its cost.
+				getServerSpellCalculations ().applyStartingSpellOfMasteryResearchCostReduction (priv, thisWizard.getPick (), mom.getServerDB ());
+
 				// Send players' spells to them (and them only)
 				if (thisPlayer.getPlayerDescription ().getPlayerType () == PlayerType.HUMAN)
 				{
@@ -543,6 +546,10 @@ public final class PlayerMessageProcessingImpl implements PlayerMessageProcessin
 					spellsMsg.getSpellResearchStatus ().addAll (priv.getSpellResearchStatus ());
 					thisPlayer.getConnection ().sendMessageToClient (spellsMsg);
 				}
+
+				// Also need to tell the client about the reduced total cost of the Spell of Mastery, not just its reduced remaining cost
+				if (priv.getSpellOfMasteryResearchCostReduction () != null)
+					getServerSpellCalculations ().sendSpellOfMasteryResearchCost (thisPlayer);
 			}
 
 			// Add monsters in nodes/lairs/towers - can only do this after we've added the players

@@ -818,6 +818,9 @@ public final class DiplomacyProcessingImpl implements DiplomacyProcessing
 		final SpellResearchStatus researchStatus = getSpellUtils ().findSpellResearchStatus (receiverPriv.getSpellResearchStatus (), spellID);
 		researchStatus.setStatus (SpellResearchStatusID.AVAILABLE);
 		
+		// Learning a spell makes the Spell of Mastery cheaper
+		getServerSpellCalculations ().spellAcquiredDuringPlay (receiver, spellID, mom.getServerDB ());
+		
 		// Just in case the donated spell was one of the 8 spells available to research now
 		getServerSpellCalculations ().randomizeSpellsResearchableNow (receiverPriv.getSpellResearchStatus (), mom.getServerDB ());
 		
@@ -935,6 +938,10 @@ public final class DiplomacyProcessingImpl implements DiplomacyProcessing
 		final SpellResearchStatus proposerResearchStatus = getSpellUtils ().findSpellResearchStatus (proposerPriv.getSpellResearchStatus (), proposerWantsSpellID);
 		agreerResearchStatus.setStatus (SpellResearchStatusID.AVAILABLE);
 		proposerResearchStatus.setStatus (SpellResearchStatusID.AVAILABLE);
+		
+		// Learning a spell makes the Spell of Mastery cheaper
+		getServerSpellCalculations ().spellAcquiredDuringPlay (agreer, agreerWantsSpellID, mom.getServerDB ());
+		getServerSpellCalculations ().spellAcquiredDuringPlay (proposer, proposerWantsSpellID, mom.getServerDB ());
 		
 		// Just in case the donated spell was one of the 8 spells available to research now
 		getServerSpellCalculations ().randomizeSpellsResearchableNow (agreerPriv.getSpellResearchStatus (), mom.getServerDB ());

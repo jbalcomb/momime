@@ -799,6 +799,12 @@ randomly pick the 8 further choices of what to research next.  So in that situat
 					<xsd:sequence>
 						<xsd:element minOccurs="1" maxOccurs="1" name="spellID" type="momimecommon:spellID" />
 						<xsd:element minOccurs="1" maxOccurs="1" name="remainingResearchCost" type="momimecommon:spellResearchCost" />
+						<xsd:element minOccurs="0" maxOccurs="1" name="spellOfMasteryResearchCostReduction" type="xsd:int">
+							<xsd:annotation>
+								<xsd:documentation>Only sent when the remaining research cost of the Spell of Mastery is being reduced; the new total value for
+									momPersistentPlayerPrivateKnowledge.spellOfMasteryResearchCostReduction, so the client knows the full (reduced) research cost too.</xsd:documentation>
+							</xsd:annotation>
+						</xsd:element>
 					</xsd:sequence>
 				</xsd:extension>
 			</xsd:complexContent>

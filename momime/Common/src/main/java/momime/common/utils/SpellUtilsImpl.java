@@ -16,6 +16,7 @@ import momime.common.database.SpellBookSectionID;
 import momime.common.database.SpellSetting;
 import momime.common.database.ValidUnitTarget;
 import momime.common.messages.MemoryMaintainedSpell;
+import momime.common.messages.MomPersistentPlayerPrivateKnowledge;
 import momime.common.messages.PlayerPick;
 import momime.common.messages.SpellResearchStatus;
 import momime.common.messages.SpellResearchStatusID;
@@ -39,6 +40,26 @@ public final class SpellUtilsImpl implements SpellUtils
 	
 	// Methods dealing with a single spell
 
+	/**
+	 * In MoM 1.31 the research cost of the Spell of Mastery is reduced by 3,000 for having 11+ books in any one realm, and by half the research cost
+	 * of every spell acquired during the game.  The reduction is stored in the player's private knowledge.  All other spells cost what the database says.
+	 * 
+	 * @param spell Spell definition
+	 * @param priv Private knowledge of the player whose research cost we want
+	 * @return Full research cost of the spell for this player, before any research is put towards it; null if the spell has no research cost
+	 */
+	@Override
+	public final Integer getFullResearchCost (final Spell spell, final MomPersistentPlayerPrivateKnowledge priv)
+	{
+		Integer researchCost = spell.getResearchCost ();
+		if ((researchCost != null) && (CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY.equals (spell.getSpellID ())) &&
+			(priv != null) && (priv.getSpellOfMasteryResearchCostReduction () != null))
+			
+			researchCost = Math.max (0, researchCost - priv.getSpellOfMasteryResearchCostReduction ());
+		
+		return researchCost;
+	}
+	
 	/**
 	 * @param spells List of spell research statuses to search
 	 * @param spellID Spell ID to search for

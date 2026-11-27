@@ -360,6 +360,9 @@ public final class TreasureUtilsImpl implements TreasureUtils
 
 					spell.setStatus (SpellResearchStatusID.AVAILABLE);
 					reward.getSpellID ().add (spell.getSpellID ());
+					
+					// Learning a spell makes the Spell of Mastery cheaper
+					getServerSpellCalculations ().spellAcquiredDuringPlay (player, spell.getSpellID (), mom.getServerDB ());
 					remainingTreasureValue = remainingTreasureValue - spellRank.getTreasureRewardCost ();
 					
 					// If the spell happened to be the one we were researching, then blank research out (client does this based on FullSpellListMessage)
@@ -620,7 +623,16 @@ public final class TreasureUtilsImpl implements TreasureUtils
 					
 					// If the pick grants any spells (Artificer) then learn them
 					for (final String freeSpellID : pick.getPickFreeSpell ())
-						getSpellUtils ().findSpellResearchStatus (priv.getSpellResearchStatus (), freeSpellID).setStatus (SpellResearchStatusID.AVAILABLE);
+					{
+						final SpellResearchStatus freeSpell = getSpellUtils ().findSpellResearchStatus (priv.getSpellResearchStatus (), freeSpellID);
+						if (freeSpell.getStatus () != SpellResearchStatusID.AVAILABLE)
+						{
+							freeSpell.setStatus (SpellResearchStatusID.AVAILABLE);
+							
+							// Learning a spell makes the Spell of Mastery cheaper
+							getServerSpellCalculations ().spellAcquiredDuringPlay (player, freeSpellID, mom.getServerDB ());
+						}
+					}
 				}
 			}
 		}

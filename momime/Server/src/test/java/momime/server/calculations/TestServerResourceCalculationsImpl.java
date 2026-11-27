@@ -1001,6 +1001,7 @@ public final class TestServerResourceCalculationsImpl extends ServerTestData
 		}
 
 		verify (serverSpellCalculations).randomizeSpellsResearchableNow (priv.getSpellResearchStatus (), db);		// <---
+		verify (serverSpellCalculations).spellAcquiredDuringPlay (player, "SP002", db);		// Researching a spell reduces Spell of Mastery research cost
 		
 		verifyNoMoreInteractions (serverSpellCalculations);
 	}

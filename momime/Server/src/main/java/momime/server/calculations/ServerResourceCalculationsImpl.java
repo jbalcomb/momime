@@ -685,6 +685,9 @@ public final class ServerResourceCalculationsImpl implements ServerResourceCalcu
 					spellBeingResarched.setStatus (SpellResearchStatusID.AVAILABLE);
 					priv.setSpellIDBeingResearched (null);
 
+					// Learning a spell makes the Spell of Mastery cheaper
+					getServerSpellCalculations ().spellAcquiredDuringPlay (player, spellBeingResarched.getSpellID (), db);
+
 					// Pick another random spell to add to the 8 spells researchable now
 					getServerSpellCalculations ().randomizeSpellsResearchableNow (priv.getSpellResearchStatus (), db);
 

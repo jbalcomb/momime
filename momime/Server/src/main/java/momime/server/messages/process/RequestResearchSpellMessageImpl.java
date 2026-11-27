@@ -10,6 +10,7 @@ import com.ndg.multiplayer.server.session.PlayerServerDetails;
 import com.ndg.multiplayer.server.session.PostSessionClientToServerMessage;
 
 import jakarta.xml.bind.JAXBException;
+import momime.common.database.CommonDatabaseConstants;
 import momime.common.database.RecordNotFoundException;
 import momime.common.database.Spell;
 import momime.common.database.SwitchResearch;
@@ -24,6 +25,7 @@ import momime.common.messages.servertoclient.UpdateRemainingResearchCostMessage;
 import momime.common.utils.KnownWizardUtils;
 import momime.common.utils.SpellUtils;
 import momime.server.MomSessionVariables;
+import momime.server.calculations.ServerSpellCalculations;
 import momime.server.utils.SpellServerUtils;
 
 /**
@@ -42,6 +44,9 @@ public final class RequestResearchSpellMessageImpl extends RequestResearchSpellM
 	
 	/** Methods for finding KnownWizardDetails from the list */
 	private KnownWizardUtils knownWizardUtils;
+	
+	/** Server-only spell calculations */
+	private ServerSpellCalculations serverSpellCalculations;
 	
 	/**
 	 * @param thread Thread for the session this message is for; from the thread, the processor can obtain the list of players, sd, gsk, gpl, etc
@@ -84,12 +89,16 @@ public final class RequestResearchSpellMessageImpl extends RequestResearchSpellM
 				final Spell spellPreviouslyBeingResearched = mom.getServerDB ().findSpell (priv.getSpellIDBeingResearched (), "RequestResearchSpellMessageImpl");
 				final SpellResearchStatus spellPreviouslyBeingResearchedStatus = getSpellUtils ().findSpellResearchStatus (priv.getSpellResearchStatus (), priv.getSpellIDBeingResearched ());
 
-				spellPreviouslyBeingResearchedStatus.setRemainingResearchCost (spellPreviouslyBeingResearched.getResearchCost ());
+				// Spell of Mastery goes back to its reduced cost, not the full 60,000
+				final int fullResearchCost = CommonDatabaseConstants.SPELL_ID_SPELL_OF_MASTERY.equals (priv.getSpellIDBeingResearched ()) ?
+					getServerSpellCalculations ().calculateSpellOfMasteryResearchCost (priv, mom.getServerDB ()) : spellPreviouslyBeingResearched.getResearchCost ();
+				
+				spellPreviouslyBeingResearchedStatus.setRemainingResearchCost (fullResearchCost);
 
 				// Lose on client
 				final UpdateRemainingResearchCostMessage msg = new UpdateRemainingResearchCostMessage ();
 				msg.setSpellID (priv.getSpellIDBeingResearched ());
-				msg.setRemainingResearchCost (spellPreviouslyBeingResearched.getResearchCost ());
+				msg.setRemainingResearchCost (fullResearchCost);
 				sender.getConnection ().sendMessageToClient (msg);
 			}
 
@@ -149,5 +158,21 @@ public final class RequestResearchSpellMessageImpl extends RequestResearchSpellM
 	public final void setKnownWizardUtils (final KnownWizardUtils k)
 	{
 		knownWizardUtils = k;
+	}
+
+	/**
+	 * @return Server-only spell calculations
+	 */
+	public final ServerSpellCalculations getServerSpellCalculations ()
+	{
+		return serverSpellCalculations;
+	}
+
+	/**
+	 * @param calc Server-only spell calculations
+	 */
+	public final void setServerSpellCalculations (final ServerSpellCalculations calc)
+	{
+		serverSpellCalculations = calc;
 	}
 }
