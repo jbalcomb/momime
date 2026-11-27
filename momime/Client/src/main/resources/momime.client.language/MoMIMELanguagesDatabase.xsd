@@ -860,6 +860,10 @@
 						<xsd:selector xpath="productionFromMultipleTiles" />
 						<xsd:field xpath="@language" />
 					</xsd:key>
+					<xsd:key name="cityProductionProductionFromSharedTilesPK">
+						<xsd:selector xpath="productionFromSharedTiles" />
+						<xsd:field xpath="@language" />
+					</xsd:key>
 					<xsd:key name="cityProductionProductionFromSingleMapFeaturePK">
 						<xsd:selector xpath="productionFromSingleMapFeature" />
 						<xsd:field xpath="@language" />
@@ -874,6 +878,10 @@
 					</xsd:key>
 					<xsd:key name="cityProductionProductionFromMapFeatureBuildingBonusPK">
 						<xsd:selector xpath="productionFromMapFeatureBuildingBonus" />
+						<xsd:field xpath="@language" />
+					</xsd:key>
+					<xsd:key name="cityProductionProductionFromMapFeatureSharedPK">
+						<xsd:selector xpath="productionFromMapFeatureShared" />
 						<xsd:field xpath="@language" />
 					</xsd:key>
 					<xsd:key name="cityProductionProductionFromBuildingWithoutReligiousRetortBonusPK">
@@ -930,6 +938,10 @@
 					</xsd:key>
 					<xsd:key name="cityProductionPercentageBonusFromMultipleTilesPK">
 						<xsd:selector xpath="percentageBonusFromMultipleTiles" />
+						<xsd:field xpath="@language" />
+					</xsd:key>
+					<xsd:key name="cityProductionPercentageBonusFromSharedTilesPK">
+						<xsd:selector xpath="percentageBonusFromSharedTiles" />
 						<xsd:field xpath="@language" />
 					</xsd:key>
 					<xsd:key name="cityProductionPercentageBonusFromBuildingPK">
@@ -3612,10 +3624,12 @@
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="goldFromTaxesAfterMultiplier" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="productionFromSingleTile" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="productionFromMultipleTiles" />
+	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="productionFromSharedTiles" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="productionFromSingleMapFeature" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="productionFromMultipleMapFeatures" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="productionFromMapFeatureRaceBonus" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="productionFromMapFeatureBuildingBonus" />
+	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="productionFromMapFeatureShared" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="productionFromBuildingWithoutReligiousRetortBonus" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="productionFromBuildingWithReligiousRetortBonus" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="productionFromBuildingNegated" />
@@ -3630,6 +3644,7 @@
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="productionPercentagePenaltyHeading" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="percentageBonusFromSingleTile" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="percentageBonusFromMultipleTiles" />
+	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="percentageBonusFromSharedTiles" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="percentageBonusFromBuilding" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="percentageBonusFromSpell" />
 	        <xsd:element minOccurs="0" maxOccurs="unbounded" type="momimecommon:languageText" name="percentagePenaltyFromSpell" />

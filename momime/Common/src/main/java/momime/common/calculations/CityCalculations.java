@@ -55,6 +55,20 @@ public interface CityCalculations
 		throws RecordNotFoundException;
 	
 	/**
+	 * Strategy guide p194 / wiki "Town - Shared Tiles".  A tile that is within the radius of two cities gives each of them only half its output.
+	 * Note the city radius is symmetric, so the tile is within the radius of any city that is within the radius of the tile.
+	 * Any city counts, whoever owns it, including outposts.
+	 *
+	 * @param map Known terrain
+	 * @param tileLocation Location of the tile to check
+	 * @param cityLocation Location of the city we're calculating for, which is ignored; this can be a location with no city, e.g. evaluating a potential city site
+	 * @param overlandMapCoordinateSystem Coordinate system for traversing overland map
+	 * @return True if the tile is within the radius of some city other than the one at cityLocation
+	 */
+	public boolean isTileSharedWithAnotherCity (final MapVolumeOfMemoryGridCells map, final MapCoordinates3DEx tileLocation,
+		final MapCoordinates3DEx cityLocation, final CoordinateSystem overlandMapCoordinateSystem);
+
+	/**
 	 * Strategy guide p210.  Note this must generate % values even if the city produces no gold, or if there is no city at all,
 	 * since the AI uses this to consider the potential value of sites it is considering building cities at. 
 	 * 

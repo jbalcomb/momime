@@ -286,6 +286,10 @@ public final class CityProductionLanguageVariableReplacerImpl extends BreakdownL
 			case "MAP_FEATURE_PRODUCTION_AMOUNT_FINAL":
 				text = getTextUtils ().halfIntToStr (getCurrentMapFeature ().getDoubleModifiedProductionAmountAllFeatures ());
 				break;
+
+			case "MAP_FEATURE_PRODUCTION_AMOUNT_SHARED":
+				text = getTextUtils ().halfIntToStr (getCurrentMapFeature ().getDoubleProductionAmountAfterSharing ());
+				break;
 				
 			// Dependant on current building
 			case "BUILDING_NAME":

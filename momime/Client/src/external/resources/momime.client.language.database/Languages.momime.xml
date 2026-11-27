@@ -1540,6 +1540,9 @@ Note some spells such as Banish and Life Drain allow additional Mana to be chann
 		<productionFromMultipleTiles language="en">
 			<text>TILE_COUNT TILE_TYPE tiles each producing PRODUCTION_PER_TILE PRODUCTION_TYPE = PRODUCTION_ALL_TILES PRODUCTION_TYPE</text>
 		</productionFromMultipleTiles>
+		<productionFromSharedTiles language="en">
+			<text>TILE_COUNT x TILE_TYPE shared with another city, each producing PRODUCTION_PER_TILE PRODUCTION_TYPE, halved = PRODUCTION_ALL_TILES PRODUCTION_TYPE</text>
+		</productionFromSharedTiles>
 		<productionFromSingleMapFeature language="en">
 			<text>MAP_FEATURE production PRODUCTION_ALL_MAP_FEATURES PRODUCTION_TYPE</text>
 		</productionFromSingleMapFeature>
@@ -1564,6 +1567,9 @@ Note some spells such as Banish and Life Drain allow additional Mana to be chann
 		<productionFromMapFeatureBuildingBonus language="pl">
 			<text>+PERCENTAGE_BONUS% bonus from buildings = PRODUCTION_AMOUNT PRODUCTION_TYPE</text>
 		</productionFromMapFeatureBuildingBonus>
+		<productionFromMapFeatureShared language="en">
+			<text>Shared with another city, halved and rounded down = MAP_FEATURE_PRODUCTION_AMOUNT_SHARED PRODUCTION_TYPE</text>
+		</productionFromMapFeatureShared>
 		<productionFromBuildingWithoutReligiousRetortBonus language="en">
 			<text>BUILDING_NAME produces BUILDING_MODIFIED_PRODUCTION PRODUCTION_TYPE</text>
 		</productionFromBuildingWithoutReligiousRetortBonus>
@@ -1648,6 +1654,9 @@ Note some spells such as Banish and Life Drain allow additional Mana to be chann
 		<percentageBonusFromMultipleTiles language="en">
 			<text>TILE_COUNT TILE_TYPE each gives PERCENTAGE_PER_TILE% PRODUCTION_TYPE bonus = PERCENTAGE_ALL_TILES% PRODUCTION_TYPE bonus</text>
 		</percentageBonusFromMultipleTiles>
+		<percentageBonusFromSharedTiles language="en">
+			<text>TILE_COUNT x TILE_TYPE shared with another city, each gives PERCENTAGE_PER_TILE% halved and rounded down = PERCENTAGE_ALL_TILES% PRODUCTION_TYPE bonus</text>
+		</percentageBonusFromSharedTiles>
 		<percentageBonusFromBuilding language="en">
 			<text>BUILDING_NAME gives BUILDING_PERCENTAGE_VALUE% PRODUCTION_TYPE bonus</text>
 		</percentageBonusFromBuilding>

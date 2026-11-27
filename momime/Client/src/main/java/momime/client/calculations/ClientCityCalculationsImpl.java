@@ -395,7 +395,10 @@ public final class ClientCityCalculationsImpl implements ClientCityCalculations
 			// Production from terrain tiles (food/max city size)
 			if (tileTypeProduction.getDoubleProductionAmountAllTiles () > 0)
 			{
-				if (tileTypeProduction.getCount () == 1)
+				if (tileTypeProduction.isShared ())
+					buckets.get (tileTypeProduction.getProductionAmountBucketID ()).add (getProductionReplacer ().replaceVariables
+						(getLanguageHolder ().findDescription (getLanguages ().getCityProduction ().getProductionFromSharedTiles ())));
+				else if (tileTypeProduction.getCount () == 1)
 					buckets.get (tileTypeProduction.getProductionAmountBucketID ()).add (getProductionReplacer ().replaceVariables
 						(getLanguageHolder ().findDescription (getLanguages ().getCityProduction ().getProductionFromSingleTile ())));
 				else
@@ -406,7 +409,9 @@ public final class ClientCityCalculationsImpl implements ClientCityCalculations
 			// % bonus from terrain tiles (production)
 			if (tileTypeProduction.getPercentageBonusAllTiles () > 0)
 			{
-				if (tileTypeProduction.getCount () == 1)
+				if (tileTypeProduction.isShared ())
+					percentageBonuses.add (getProductionReplacer ().replaceVariables (getLanguageHolder ().findDescription (getLanguages ().getCityProduction ().getPercentageBonusFromSharedTiles ())));
+				else if (tileTypeProduction.getCount () == 1)
 					percentageBonuses.add (getProductionReplacer ().replaceVariables (getLanguageHolder ().findDescription (getLanguages ().getCityProduction ().getPercentageBonusFromSingleTile ())));
 				else
 					percentageBonuses.add (getProductionReplacer ().replaceVariables (getLanguageHolder ().findDescription (getLanguages ().getCityProduction ().getPercentageBonusFromMultipleTiles ())));
@@ -432,6 +437,10 @@ public final class ClientCityCalculationsImpl implements ClientCityCalculations
 			if (mapFeatureProduction.getBuildingMineralPercentageBonus () > 0)
 				buckets.get (mapFeatureProduction.getProductionAmountBucketID ()).add (INDENT + getProductionReplacer ().replaceVariables
 					(getLanguageHolder ().findDescription (getLanguages ().getCityProduction ().getProductionFromMapFeatureBuildingBonus ())));
+
+			if (mapFeatureProduction.isShared ())
+				buckets.get (mapFeatureProduction.getProductionAmountBucketID ()).add (INDENT + getProductionReplacer ().replaceVariables
+					(getLanguageHolder ().findDescription (getLanguages ().getCityProduction ().getProductionFromMapFeatureShared ())));
 		}
 		
 		for (final CityProductionBreakdownBuilding buildingProduction : calc.getBuildingBreakdown ())

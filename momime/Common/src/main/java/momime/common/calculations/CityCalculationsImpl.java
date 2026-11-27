@@ -44,6 +44,7 @@ import momime.common.database.RaceEx;
 import momime.common.database.RacePopulationTask;
 import momime.common.database.RaceUnrest;
 import momime.common.database.RecordNotFoundException;
+import momime.common.database.RoundingDirectionID;
 import momime.common.database.Spell;
 import momime.common.database.TaxRate;
 import momime.common.database.TileType;
@@ -131,6 +132,9 @@ public final class CityCalculationsImpl implements CityCalculations
 	 * Note this is different from the Delphi list TRACE_CITY_DIRECTION is in MomMap.pas in that the list here DOES include the tile the city itself is on, the Delphi code (unnecessarily) deals with the centre tile separately
 	 * We do not end up back where we started (in either version)
 	 */
+	/** Appended to tile type and map feature IDs when counting them up, to keep shared tiles separate from unshared tiles */
+	private final static String SHARED_KEY_SUFFIX = "-shared";
+
 	public final static SquareMapDirection [] DIRECTIONS_TO_TRAVERSE_CITY_RADIUS = {
 
 		// Go around the 1st ring around the city (radius = 1)
@@ -142,6 +146,74 @@ public final class CityCalculationsImpl implements CityCalculations
 		// Then do the 2nd ring
 		SquareMapDirection.WEST, SquareMapDirection.NORTH, SquareMapDirection.NORTHEAST, SquareMapDirection.EAST, SquareMapDirection.EAST, SquareMapDirection.SOUTHEAST,
 		SquareMapDirection.SOUTH, SquareMapDirection.SOUTH, SquareMapDirection.SOUTHWEST, SquareMapDirection.WEST, SquareMapDirection.WEST, SquareMapDirection.NORTHWEST};
+
+	/**
+	 * Strategy guide p194 / wiki "Town - Shared Tiles".  A tile that is within the radius of two cities gives each of them only half its output.
+	 * Note the city radius is symmetric, so the tile is within the radius of any city that is within the radius of the tile.
+	 * Any city counts, whoever owns it, including outposts.
+	 *
+	 * @param map Known terrain
+	 * @param tileLocation Location of the tile to check
+	 * @param cityLocation Location of the city we're calculating for, which is ignored; this can be a location with no city, e.g. evaluating a potential city site
+	 * @param overlandMapCoordinateSystem Coordinate system for traversing overland map
+	 * @return True if the tile is within the radius of some city other than the one at cityLocation
+	 */
+	@Override
+	public final boolean isTileSharedWithAnotherCity (final MapVolumeOfMemoryGridCells map, final MapCoordinates3DEx tileLocation,
+		final MapCoordinates3DEx cityLocation, final CoordinateSystem overlandMapCoordinateSystem)
+	{
+		final MapCoordinates3DEx coords = new MapCoordinates3DEx (tileLocation);
+		for (final SquareMapDirection direction : DIRECTIONS_TO_TRAVERSE_CITY_RADIUS)
+			if ((getCoordinateSystemUtils ().move3DCoordinates (overlandMapCoordinateSystem, coords, direction.getDirectionID ())) && (!coords.equals (cityLocation)) &&
+				(map.getPlane ().get (coords.getZ ()).getRow ().get (coords.getY ()).getCell ().get (coords.getX ()).getCityData () != null))
+
+				return true;
+
+		return false;
+	}
+
+	/**
+	 * @param map Known terrain
+	 * @param cityLocation Location of the city to calculate for
+	 * @param overlandMapCoordinateSystem Coordinate system for traversing overland map
+	 * @return How many of each tile type there are within the city radius, keyed by tile type ID, with shared tiles listed separately
+	 */
+	private final Map<String, CityProductionBreakdownTileType> countTileTypesWithinCityRadius (final MapVolumeOfMemoryGridCells map,
+		final MapCoordinates3DEx cityLocation, final CoordinateSystem overlandMapCoordinateSystem)
+	{
+		final Map<String, CityProductionBreakdownTileType> tileTypes = new HashMap<String, CityProductionBreakdownTileType> ();
+
+		final MapCoordinates3DEx coords = new MapCoordinates3DEx (cityLocation);
+		for (final SquareMapDirection direction : DIRECTIONS_TO_TRAVERSE_CITY_RADIUS)
+			if (getCoordinateSystemUtils ().move3DCoordinates (overlandMapCoordinateSystem, coords, direction.getDirectionID ()))
+			{
+				final OverlandMapTerrainData terrainData = map.getPlane ().get (coords.getZ ()).getRow ().get (coords.getY ()).getCell ().get (coords.getX ()).getTerrainData ();
+				if ((terrainData != null) && (terrainData.getCorrupted () == null) && (terrainData.getTileTypeID () != null))
+				{
+					// Is this tile type already listed in the map?
+					final boolean shared = isTileSharedWithAnotherCity (map, coords, cityLocation, overlandMapCoordinateSystem);
+					final String key = shared ? (terrainData.getTileTypeID () + SHARED_KEY_SUFFIX) : terrainData.getTileTypeID ();
+
+					final CityProductionBreakdownTileType thisTileType = tileTypes.get (key);
+					if (thisTileType == null)
+					{
+						// New tile type
+						final CityProductionBreakdownTileType newTileType = new CityProductionBreakdownTileType ();
+						newTileType.setTileTypeID (terrainData.getTileTypeID ());
+						newTileType.setShared (shared);
+						newTileType.setCount (1);
+						tileTypes.put (key, newTileType);
+					}
+					else
+					{
+						// Just add to existing counter
+						thisTileType.setCount (thisTileType.getCount () + 1);
+					}
+				}
+			}
+
+		return tileTypes;
+	}
 
 	/**
 	 * This used to be called calculateProductionBonus when it only returned an int.
@@ -160,33 +232,8 @@ public final class CityCalculationsImpl implements CityCalculations
 		throws RecordNotFoundException
 	{
 		// First pass - get a list of how many of each tile type are within the city radius
-		final Map<String, CityProductionBreakdownTileType> tileTypes = new HashMap<String, CityProductionBreakdownTileType> ();
+		final Map<String, CityProductionBreakdownTileType> tileTypes = countTileTypesWithinCityRadius (map, cityLocation, overlandMapCoordinateSystem);
 
-		final MapCoordinates3DEx coords = new MapCoordinates3DEx (cityLocation);
-		for (final SquareMapDirection direction : DIRECTIONS_TO_TRAVERSE_CITY_RADIUS)
-			if (getCoordinateSystemUtils ().move3DCoordinates (overlandMapCoordinateSystem, coords, direction.getDirectionID ()))
-			{
-				final OverlandMapTerrainData terrainData = map.getPlane ().get (coords.getZ ()).getRow ().get (coords.getY ()).getCell ().get (coords.getX ()).getTerrainData ();
-				if ((terrainData != null) && (terrainData.getCorrupted () == null) && (terrainData.getTileTypeID () != null))
-				{
-					// Is this tile type already listed in the map?
-					final CityProductionBreakdownTileType thisTileType = tileTypes.get (terrainData.getTileTypeID ());
-					if (thisTileType == null)
-					{
-						// New tile type
-						final CityProductionBreakdownTileType newTileType = new CityProductionBreakdownTileType ();
-						newTileType.setTileTypeID (terrainData.getTileTypeID ());
-						newTileType.setCount (1);
-						tileTypes.put (terrainData.getTileTypeID (), newTileType);
-					}
-					else
-					{
-						// Just add to existing counter
-						thisTileType.setCount (thisTileType.getCount () + 1);
-					}
-				}
-			}
-		
 		// Second pass - look to see if any city spell effects boost the production bonus of certain tile types
 		final Map<String, Integer> productionBonusOverrides = new HashMap<String, Integer> ();
 		if (spells != null)
@@ -212,8 +259,9 @@ public final class CityCalculationsImpl implements CityCalculations
 			
 			if (percentageBonus != null)
 			{
+				// Shared tiles give half, rounded down per tile, so e.g. shared Desert gives 3% / 2 = 1%
 				thisTileType.setPercentageBonusEachTile (percentageBonus);
-				thisTileType.setPercentageBonusAllTiles (percentageBonus * thisTileType.getCount ());
+				thisTileType.setPercentageBonusAllTiles ((thisTileType.isShared () ? (percentageBonus / 2) : percentageBonus) * thisTileType.getCount ());
 				
 				breakdown.getTileTypeProduction ().add (thisTileType);
 				breakdown.setPercentageBonus (breakdown.getPercentageBonus () + thisTileType.getPercentageBonusAllTiles ());
@@ -466,45 +514,42 @@ public final class CityCalculationsImpl implements CityCalculations
 		throws RecordNotFoundException, MomException
 	{
 		// First pass - get a list of how many of each tile type are within the city radius
-		final Map<String, CityProductionBreakdownTileType> tileTypes = new HashMap<String, CityProductionBreakdownTileType> ();
+		final Map<String, CityProductionBreakdownTileType> tileTypes = countTileTypesWithinCityRadius (map, cityLocation, overlandMapCoordinateSystem);
 
-		final MapCoordinates3DEx coords = new MapCoordinates3DEx (cityLocation);
-		for (final SquareMapDirection direction : DIRECTIONS_TO_TRAVERSE_CITY_RADIUS)
-			if (getCoordinateSystemUtils ().move3DCoordinates (overlandMapCoordinateSystem, coords, direction.getDirectionID ()))
-			{
-				final OverlandMapTerrainData terrainData = map.getPlane ().get (coords.getZ ()).getRow ().get (coords.getY ()).getCell ().get (coords.getX ()).getTerrainData ();
-				if ((terrainData != null) && (terrainData.getCorrupted () == null) && (terrainData.getTileTypeID () != null))
-				{
-					// Is this tile type already listed in the map?
-					final CityProductionBreakdownTileType thisTileType = tileTypes.get (terrainData.getTileTypeID ());
-					if (thisTileType == null)
-					{
-						// New tile type
-						final CityProductionBreakdownTileType newTileType = new CityProductionBreakdownTileType ();
-						newTileType.setTileTypeID (terrainData.getTileTypeID ());
-						newTileType.setCount (1);
-						tileTypes.put (terrainData.getTileTypeID (), newTileType);
-					}
-					else
-					{
-						// Just add to existing counter
-						thisTileType.setCount (thisTileType.getCount () + 1);
-					}
-				}
-			}
-		
 		// Second pass - now check which of those tile types actually produce any food
 		final CityProductionBreakdown breakdown = new CityProductionBreakdown ();
 		breakdown.setProductionTypeID (CommonDatabaseConstants.PRODUCTION_TYPE_ID_FOOD);
-		
+
+		// Shared tiles give half their food, but unlike everything else the food is totalled up over all shared tiles before rounding, so
+		// e.g. a shared Forest (1/2) + a shared Grassland (1 1/2) give 1 food, rather than rounding each separately.
+		// Values here are already doubled, so halving them gives quarters.  Rather than store quarters, we halve the running total of shared food so far,
+		// rounding in the same direction the final food total will be rounded, so the final result is exactly the same as if we'd totalled up in quarters.
+		// e.g. (1 + 3) / 2 = doubled value of 2 = 1 food
+		int doubleSharedFoodSoFar = 0;
+		int doubleSharedFoodHalvedSoFar = 0;
+		Boolean roundSharedFoodUp = null;
+
 		for (final CityProductionBreakdownTileType thisTileType : tileTypes.values ())
 		{
 			final Integer doubleFoodFromTileType = db.findTileType (thisTileType.getTileTypeID (), "listCityFoodProductionFromTerrainTiles").getDoubleFood ();
 			if (doubleFoodFromTileType != null)
 			{
 				thisTileType.setDoubleProductionAmountEachTile (doubleFoodFromTileType);
-				thisTileType.setDoubleProductionAmountAllTiles (doubleFoodFromTileType * thisTileType.getCount ());
-				
+				if (!thisTileType.isShared ())
+					thisTileType.setDoubleProductionAmountAllTiles (doubleFoodFromTileType * thisTileType.getCount ());
+				else
+				{
+					if (roundSharedFoodUp == null)
+						roundSharedFoodUp = (db.findProductionType (CommonDatabaseConstants.PRODUCTION_TYPE_ID_FOOD,
+							"listCityFoodProductionFromTerrainTiles").getRoundingDirectionID () == RoundingDirectionID.ROUND_UP);
+
+					doubleSharedFoodSoFar = doubleSharedFoodSoFar + (doubleFoodFromTileType * thisTileType.getCount ());
+					final int doubleSharedFoodHalved = roundSharedFoodUp ? ((doubleSharedFoodSoFar + 1) / 2) : (doubleSharedFoodSoFar / 2);
+
+					thisTileType.setDoubleProductionAmountAllTiles (doubleSharedFoodHalved - doubleSharedFoodHalvedSoFar);
+					doubleSharedFoodHalvedSoFar = doubleSharedFoodHalved;
+				}
+
 				breakdown.getTileTypeProduction ().add (thisTileType);
 				thisTileType.setProductionAmountBucketID (getCityProductionUtils ().addProductionAmountToBreakdown
 					(breakdown, thisTileType.getDoubleProductionAmountAllTiles (), ProductionAmountBucketID.BEFORE_PERCENTAGE_BONUSES, db));
@@ -1415,14 +1460,18 @@ public final class CityCalculationsImpl implements CityCalculations
 				if ((terrainData != null) && (terrainData.getCorrupted () == null) && (terrainData.getMapFeatureID () != null))
 				{
 					// Is this map feature already listed in the map?
-					final CityProductionBreakdownMapFeature thisMapFeature = mapFeatures.get (terrainData.getMapFeatureID ());
+					final boolean shared = isTileSharedWithAnotherCity (map, coords, cityLocation, overlandMapCoordinateSystem);
+					final String key = shared ? (terrainData.getMapFeatureID () + SHARED_KEY_SUFFIX) : terrainData.getMapFeatureID ();
+
+					final CityProductionBreakdownMapFeature thisMapFeature = mapFeatures.get (key);
 					if (thisMapFeature == null)
 					{
 						// New map feature
 						final CityProductionBreakdownMapFeature newMapFeature = new CityProductionBreakdownMapFeature ();
 						newMapFeature.setMapFeatureID (terrainData.getMapFeatureID ());
+						newMapFeature.setShared (shared);
 						newMapFeature.setCount (1);
-						mapFeatures.put (terrainData.getMapFeatureID (), newMapFeature);
+						mapFeatures.put (key, newMapFeature);
 					}
 					else
 					{
@@ -1455,6 +1504,7 @@ public final class CityCalculationsImpl implements CityCalculations
 				// Copy the details, in case one map feature generates multiple types of production
 				final CityProductionBreakdownMapFeature copyMapFeature = new CityProductionBreakdownMapFeature ();
 				copyMapFeature.setMapFeatureID (thisMapFeature.getMapFeatureID ());
+				copyMapFeature.setShared (thisMapFeature.isShared ());
 				copyMapFeature.setCount (thisMapFeature.getCount ());
 				copyMapFeature.setRaceMineralBonusMultiplier (thisMapFeature.getRaceMineralBonusMultiplier ());
 				
@@ -1477,11 +1527,25 @@ public final class CityCalculationsImpl implements CityCalculations
 				copyMapFeature.setDoubleModifiedProductionAmountAllFeatures (copyMapFeature.getDoubleProductionAmountAfterRacialMultiplier () +
 					((copyMapFeature.getDoubleProductionAmountAfterRacialMultiplier () * copyMapFeature.getBuildingMineralPercentageBonus ()) / 100));
 
+				// Shared tiles give half, rounded down to a whole number for each feature separately, after the race and building bonuses
+				// e.g. Dwarf city with a Miners' Guild sharing Gems = 5 x2 = 10 +50% = 15 / 2 = 7 gold.
+				// Values here are doubled, so the doubled value of 7 gold = 2 x ((30 doubled) / 4) = 14.
+				if (copyMapFeature.isShared ())
+				{
+					final int doubleModifiedProductionAmountEachFeature = (copyMapFeature.getDoubleUnmodifiedProductionAmountEachFeature () * copyMapFeature.getRaceMineralBonusMultiplier ());
+					final int doubleModifiedProductionAmountEachFeatureWithBonus = doubleModifiedProductionAmountEachFeature +
+						((doubleModifiedProductionAmountEachFeature * copyMapFeature.getBuildingMineralPercentageBonus ()) / 100);
+
+					copyMapFeature.setDoubleProductionAmountAfterSharing (2 * (doubleModifiedProductionAmountEachFeatureWithBonus / 4) * copyMapFeature.getCount ());
+				}
+				else
+					copyMapFeature.setDoubleProductionAmountAfterSharing (copyMapFeature.getDoubleModifiedProductionAmountAllFeatures ());
+
 				// Add it
 				final CityProductionBreakdown breakdown = productionValues.findOrAddProductionType (thisProduction.getProductionTypeID ());
 				breakdown.getMapFeatureProduction ().add (copyMapFeature);
 				copyMapFeature.setProductionAmountBucketID (getCityProductionUtils ().addProductionAmountToBreakdown
-					(breakdown, copyMapFeature.getDoubleModifiedProductionAmountAllFeatures (), null, db));
+					(breakdown, copyMapFeature.getDoubleProductionAmountAfterSharing (), null, db));
 			}
 		}
 	}

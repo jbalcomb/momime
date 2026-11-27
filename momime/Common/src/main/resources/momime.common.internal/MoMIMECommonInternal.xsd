@@ -332,16 +332,31 @@ percentage chance that the population will shrink, rather than calculating the a
 					<xsd:documentation>The number of this tile type that there are within the city radius.</xsd:documentation>
 				</xsd:annotation>
 			</xsd:element>
-			<xsd:element minOccurs="1" maxOccurs="1" name="doubleProductionAmountEachTile" type="momimecommon:doubledProductionValue" />
-			<xsd:element minOccurs="1" maxOccurs="1" name="percentageBonusEachTile" type="momimecommon:percentage" />
+			<xsd:element minOccurs="1" maxOccurs="1" name="shared" type="xsd:boolean">
+				<xsd:annotation>
+					<xsd:documentation>True if these tiles are also within the radius of another city, so this city only gets half their output.
+					Shared and unshared tiles of the same type are listed separately.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="1" maxOccurs="1" name="doubleProductionAmountEachTile" type="momimecommon:doubledProductionValue">
+				<xsd:annotation>
+					<xsd:documentation>Full output of one tile, before halving if it is shared.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="1" maxOccurs="1" name="percentageBonusEachTile" type="momimecommon:percentage">
+				<xsd:annotation>
+					<xsd:documentation>Full % bonus of one tile, before halving if it is shared.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
 			<xsd:element minOccurs="1" maxOccurs="1" name="doubleProductionAmountAllTiles" type="momimecommon:doubledProductionValue">
 				<xsd:annotation>
-					<xsd:documentation>doubleProductionAmountEachTile * count.</xsd:documentation>
+					<xsd:documentation>doubleProductionAmountEachTile * count.  If shared, then this is halved.  Shared food is totalled up over all shared tiles
+					before the halving is rounded, so if there are multiple shared tile types, how the rounding is split between them is arbitrary, but the total is right.</xsd:documentation>
 				</xsd:annotation>
 			</xsd:element>
 			<xsd:element minOccurs="1" maxOccurs="1" name="percentageBonusAllTiles" type="momimecommon:percentage">
 				<xsd:annotation>
-					<xsd:documentation>percentageBonusEachTile * count.</xsd:documentation>
+					<xsd:documentation>percentageBonusEachTile * count.  If shared, then halved and rounded down per tile, i.e. (percentageBonusEachTile / 2) * count.</xsd:documentation>
 				</xsd:annotation>
 			</xsd:element>
 		</xsd:sequence>
@@ -357,6 +372,12 @@ percentage chance that the population will shrink, rather than calculating the a
 			<xsd:element minOccurs="1" maxOccurs="1" name="count" type="momimecommon:mapTileCount">
 				<xsd:annotation>
 					<xsd:documentation>The number of this map feature that there are within the city radius.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="1" maxOccurs="1" name="shared" type="xsd:boolean">
+				<xsd:annotation>
+					<xsd:documentation>True if these map features are also within the radius of another city, so this city only gets half their output.
+					Shared and unshared map features of the same type are listed separately.</xsd:documentation>
 				</xsd:annotation>
 			</xsd:element>
 			<xsd:element minOccurs="1" maxOccurs="1" name="doubleUnmodifiedProductionAmountEachFeature" type="momimecommon:doubledProductionValue" />
@@ -383,6 +404,12 @@ percentage chance that the population will shrink, rather than calculating the a
 			<xsd:element minOccurs="1" maxOccurs="1" name="doubleModifiedProductionAmountAllFeatures" type="momimecommon:doubledProductionValue">
 				<xsd:annotation>
 					<xsd:documentation>doubleProductionAmountAfterRacialMultiplier with % bonus from buildingMineralPercentageBonus added in.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element minOccurs="1" maxOccurs="1" name="doubleProductionAmountAfterSharing" type="momimecommon:doubledProductionValue">
+				<xsd:annotation>
+					<xsd:documentation>The amount this city actually gets.  Same as doubleModifiedProductionAmountAllFeatures if not shared.
+					If shared, each feature's modified output is halved and rounded down to a whole number separately, then multiplied by count.</xsd:documentation>
 				</xsd:annotation>
 			</xsd:element>
 		</xsd:sequence>

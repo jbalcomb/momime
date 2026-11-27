@@ -65,6 +65,8 @@ import momime.common.internal.CityGrowthRateBreakdown;
 import momime.common.internal.CityGrowthRateBreakdownDying;
 import momime.common.internal.CityGrowthRateBreakdownGrowing;
 import momime.common.internal.CityProductionBreakdown;
+import momime.common.internal.CityProductionBreakdownMapFeature;
+import momime.common.internal.CityProductionBreakdownTileType;
 import momime.common.internal.CityUnrestBreakdown;
 import momime.common.internal.CityUnrestBreakdownSpell;
 import momime.common.internal.OutpostDeathChanceBreakdown;
@@ -4720,6 +4722,279 @@ public final class TestCityCalculationsImpl
 		verify (cityProductionUtils).addProductionAmountToBreakdown (productionValues.getProductionType ().get (0), 6, null, db);
 		verify (cityProductionUtils).addProductionAmountToBreakdown (productionValues.getProductionType ().get (1), 8, null, db);
 		verify (cityProductionUtils).addProductionAmountToBreakdown (productionValues.getProductionType ().get (2), 36, null, db);
+		verifyNoMoreInteractions (cityProductionUtils);
+	}
+
+	/**
+	 * Puts a city onto a test map
+	 * @param map Map to update
+	 * @param x X coordinate
+	 * @param y Y coordinate
+	 * @param z Plane
+	 */
+	private final void addCity (final MapVolumeOfMemoryGridCells map, final int x, final int y, final int z)
+	{
+		final OverlandMapCityData cityData = new OverlandMapCityData ();
+		cityData.setCityPopulation (5000);
+		map.getPlane ().get (z).getRow ().get (y).getCell ().get (x).setCityData (cityData);
+	}
+
+	/**
+	 * Puts a tile type and/or map feature onto a test map
+	 * @param map Map to update
+	 * @param x X coordinate
+	 * @param y Y coordinate
+	 * @param tileTypeID Tile type to put here
+	 * @param mapFeatureID Map feature to put here
+	 */
+	private final void addTerrain (final MapVolumeOfMemoryGridCells map, final int x, final int y, final String tileTypeID, final String mapFeatureID)
+	{
+		final OverlandMapTerrainData terrainData = new OverlandMapTerrainData ();
+		terrainData.setTileTypeID (tileTypeID);
+		terrainData.setMapFeatureID (mapFeatureID);
+		map.getPlane ().get (1).getRow ().get (y).getCell ().get (x).setTerrainData (terrainData);
+	}
+
+	/**
+	 * Tests the isTileSharedWithAnotherCity method
+	 */
+	@Test
+	public final void testIsTileSharedWithAnotherCity ()
+	{
+		// Map
+		final CoordinateSystem sys = GenerateTestData.createOverlandMapCoordinateSystem ();
+		final MapVolumeOfMemoryGridCells map = GenerateTestData.createOverlandMap (sys);
+
+		// Our city, and another city 4 tiles east
+		addCity (map, 20, 10, 1);
+		addCity (map, 24, 10, 1);
+
+		// Set up object to test
+		final CityCalculationsImpl calc = new CityCalculationsImpl ();
+		calc.setCoordinateSystemUtils (new CoordinateSystemUtilsImpl ());
+
+		final MapCoordinates3DEx ourCity = new MapCoordinates3DEx (20, 10, 1);
+
+		// Our own city doesn't count
+		assertFalse (calc.isTileSharedWithAnotherCity (map, new MapCoordinates3DEx (19, 10, 1), ourCity, sys));
+		assertFalse (calc.isTileSharedWithAnotherCity (map, new MapCoordinates3DEx (21, 10, 1), ourCity, sys));
+
+		// Within 2 tiles of both cities
+		assertTrue (calc.isTileSharedWithAnotherCity (map, new MapCoordinates3DEx (22, 10, 1), ourCity, sys));
+		assertTrue (calc.isTileSharedWithAnotherCity (map, new MapCoordinates3DEx (22, 9, 1), ourCity, sys));
+		assertTrue (calc.isTileSharedWithAnotherCity (map, new MapCoordinates3DEx (22, 11, 1), ourCity, sys));
+
+		// Corners of the radius aren't included
+		assertFalse (calc.isTileSharedWithAnotherCity (map, new MapCoordinates3DEx (22, 12, 1), ourCity, sys));
+
+		// Other plane
+		assertFalse (calc.isTileSharedWithAnotherCity (map, new MapCoordinates3DEx (22, 10, 0), ourCity, sys));
+
+		// Works if there's no city at the location yet (surveyor or AI evaluating a potential city site)
+		map.getPlane ().get (1).getRow ().get (10).getCell ().get (20).setCityData (null);
+		assertTrue (calc.isTileSharedWithAnotherCity (map, new MapCoordinates3DEx (22, 10, 1), ourCity, sys));
+	}
+
+	/**
+	 * Tests the listCityFoodProductionFromTerrainTiles method when some tiles are shared with another city
+	 * @throws Exception If there is a problem
+	 */
+	@Test
+	public final void testListCityFoodProductionFromTerrainTiles_Shared () throws Exception
+	{
+		// Mock database
+		final CommonDatabase db = mock (CommonDatabase.class);
+
+		final TileTypeEx forestDef = new TileTypeEx ();
+		forestDef.setDoubleFood (1);
+		when (db.findTileType ("TT01", "listCityFoodProductionFromTerrainTiles")).thenReturn (forestDef);
+
+		final TileTypeEx grasslandDef = new TileTypeEx ();
+		grasslandDef.setDoubleFood (3);
+		when (db.findTileType ("TT02", "listCityFoodProductionFromTerrainTiles")).thenReturn (grasslandDef);
+
+		final ProductionTypeEx foodDef = new ProductionTypeEx ();
+		foodDef.setRoundingDirectionID (RoundingDirectionID.ROUND_UP);
+		when (db.findProductionType (CommonDatabaseConstants.PRODUCTION_TYPE_ID_FOOD, "listCityFoodProductionFromTerrainTiles")).thenReturn (foodDef);
+
+		// Map
+		final CoordinateSystem sys = GenerateTestData.createOverlandMapCoordinateSystem ();
+		final MapVolumeOfMemoryGridCells map = GenerateTestData.createOverlandMap (sys);
+
+		// Our city, and another city 4 tiles east
+		addCity (map, 20, 10, 1);
+		addCity (map, 24, 10, 1);
+
+		// 1 unshared grassland, and 2 shared forest + 1 shared grassland
+		addTerrain (map, 21, 10, "TT02", null);
+		addTerrain (map, 22, 9, "TT01", null);
+		addTerrain (map, 22, 10, "TT02", null);
+		addTerrain (map, 22, 11, "TT01", null);
+
+		// Additions
+		final CityProductionUtils cityProductionUtils = mock (CityProductionUtils.class);
+		when (cityProductionUtils.addProductionAmountToBreakdown (any (CityProductionBreakdown.class), anyInt (),
+			eq (ProductionAmountBucketID.BEFORE_PERCENTAGE_BONUSES), eq (db))).thenReturn (ProductionAmountBucketID.BEFORE_PERCENTAGE_BONUSES);
+
+		// Set up object to test
+		final CityCalculationsImpl calc = new CityCalculationsImpl ();
+		calc.setCoordinateSystemUtils (new CoordinateSystemUtilsImpl ());
+		calc.setCityProductionUtils (cityProductionUtils);
+
+		// Run method
+		final CityProductionBreakdown breakdown = calc.listCityFoodProductionFromTerrainTiles (map, new MapCoordinates3DEx (20, 10, 1), sys, db);
+
+		// Check results
+		assertEquals (3, breakdown.getTileTypeProduction ().size ());
+		int doubleUnsharedTotal = 0;
+		int doubleSharedTotal = 0;
+		for (final CityProductionBreakdownTileType tileType : breakdown.getTileTypeProduction ())
+		{
+			if (tileType.isShared ())
+			{
+				doubleSharedTotal = doubleSharedTotal + tileType.getDoubleProductionAmountAllTiles ();
+				assertEquals (tileType.getTileTypeID ().equals ("TT01") ? 2 : 1, tileType.getCount ());
+			}
+			else
+			{
+				doubleUnsharedTotal = doubleUnsharedTotal + tileType.getDoubleProductionAmountAllTiles ();
+				assertEquals ("TT02", tileType.getTileTypeID ());
+				assertEquals (1, tileType.getCount ());
+			}
+
+			verify (cityProductionUtils).addProductionAmountToBreakdown (breakdown, tileType.getDoubleProductionAmountAllTiles (), ProductionAmountBucketID.BEFORE_PERCENTAGE_BONUSES, db);
+		}
+
+		assertEquals (3, doubleUnsharedTotal);
+
+		// Shared = 1/4 + 1/4 + 3/4 = 1 1/4 food, which would round up to 1 1/2 food = doubled value of 3.
+		// If we rounded each tile separately, would get 1/2 + 1/2 + 1 = 2 food = doubled value of 4.
+		// Final total is 3 + 3 = 6 doubled = 3 food, same as if we had added up in quarters: (6 + 1 + 1 + 3) quarters = 11/4 rounded up = 3.
+		assertEquals (3, doubleSharedTotal);
+	}
+
+	/**
+	 * Tests the listCityProductionPercentageBonusesFromTerrainTiles method when some tiles are shared with another city
+	 * @throws RecordNotFoundException If we encounter a tile type that we cannot find in the cache
+	 */
+	@Test
+	public final void testListCityProductionPercentageBonusesFromTerrainTiles_Shared () throws RecordNotFoundException
+	{
+		// Mock database
+		final CommonDatabase db = mock (CommonDatabase.class);
+
+		final TileTypeEx desertDef = new TileTypeEx ();
+		desertDef.setProductionBonus (3);
+		when (db.findTileType ("TT01", "listCityProductionPercentageBonusesFromTerrainTiles")).thenReturn (desertDef);
+
+		// Map
+		final CoordinateSystem sys = GenerateTestData.createOverlandMapCoordinateSystem ();
+		final MapVolumeOfMemoryGridCells map = GenerateTestData.createOverlandMap (sys);
+
+		// Our city, and another city 4 tiles east
+		addCity (map, 20, 10, 1);
+		addCity (map, 24, 10, 1);
+
+		// 1 unshared desert, and 2 shared desert
+		addTerrain (map, 21, 10, "TT01", null);
+		addTerrain (map, 22, 9, "TT01", null);
+		addTerrain (map, 22, 10, "TT01", null);
+
+		// Set up object to test
+		final CityCalculationsImpl calc = new CityCalculationsImpl ();
+		calc.setCoordinateSystemUtils (new CoordinateSystemUtilsImpl ());
+
+		// Run method
+		final CityProductionBreakdown breakdown = calc.listCityProductionPercentageBonusesFromTerrainTiles (map, null, new MapCoordinates3DEx (20, 10, 1), sys, db);
+
+		// Check results - unshared 3%, shared each 3% / 2 = 1%, so 3 + 1 + 1 = 5%
+		assertEquals (2, breakdown.getTileTypeProduction ().size ());
+		for (final CityProductionBreakdownTileType tileType : breakdown.getTileTypeProduction ())
+		{
+			assertEquals ("TT01", tileType.getTileTypeID ());
+			assertEquals (3, tileType.getPercentageBonusEachTile ());
+			assertEquals (tileType.isShared () ? 2 : 1, tileType.getCount ());
+			assertEquals (tileType.isShared () ? 2 : 3, tileType.getPercentageBonusAllTiles ());
+		}
+
+		assertEquals (5, breakdown.getPercentageBonus ());
+	}
+
+	/**
+	 * Tests the addProductionFromMapFeatures method when some map features are shared with another city
+	 * @throws Exception If there is a problem
+	 */
+	@Test
+	public final void testAddProductionFromMapFeatures_Shared () throws Exception
+	{
+		// Mock database
+		final ProductionTypeAndDoubledValue gemsProd = new ProductionTypeAndDoubledValue ();
+		gemsProd.setProductionTypeID ("RE03");
+		gemsProd.setDoubledProductionValue (10);
+
+		final MapFeatureEx gemsDef = new MapFeatureEx ();
+		gemsDef.setRaceMineralMultiplerApplies (true);
+		gemsDef.getMapFeatureProduction ().add (gemsProd);
+
+		final ProductionTypeAndDoubledValue wildGameProd = new ProductionTypeAndDoubledValue ();
+		wildGameProd.setProductionTypeID ("RE01");
+		wildGameProd.setDoubledProductionValue (4);
+
+		final MapFeatureEx wildGameDef = new MapFeatureEx ();
+		wildGameDef.setRaceMineralMultiplerApplies (false);
+		wildGameDef.getMapFeatureProduction ().add (wildGameProd);
+
+		final CommonDatabase db = mock (CommonDatabase.class);
+		when (db.findMapFeature ("MF01", "addProductionFromMapFeatures")).thenReturn (gemsDef);
+		when (db.findMapFeature ("MF10", "addProductionFromMapFeatures")).thenReturn (wildGameDef);
+
+		// Map
+		final CoordinateSystem sys = GenerateTestData.createOverlandMapCoordinateSystem ();
+		final MapVolumeOfMemoryGridCells map = GenerateTestData.createOverlandMap (sys);
+
+		// Our city, and another city 4 tiles east
+		addCity (map, 20, 10, 1);
+		addCity (map, 24, 10, 1);
+
+		// 1 unshared gems, 1 shared gems, 1 shared wild game
+		addTerrain (map, 19, 10, null, "MF01");
+		addTerrain (map, 22, 10, null, "MF01");
+		addTerrain (map, 22, 9, null, "MF10");
+
+		// Additions
+		final CityProductionUtils cityProductionUtils = mock (CityProductionUtils.class);
+		when (cityProductionUtils.addProductionAmountToBreakdown (any (CityProductionBreakdown.class), anyInt (),
+			isNull (), eq (db))).thenReturn (ProductionAmountBucketID.BEFORE_PERCENTAGE_BONUSES);
+
+		// Set up object to test
+		final CityCalculationsImpl calc = new CityCalculationsImpl ();
+		calc.setCoordinateSystemUtils (new CoordinateSystemUtilsImpl ());
+		calc.setCityProductionUtils (cityProductionUtils);
+
+		// Run method - Dwarves with a Miners' Guild
+		final CityProductionBreakdownsEx productionValues = new CityProductionBreakdownsEx ();
+		calc.addProductionFromMapFeatures (productionValues, map, new MapCoordinates3DEx (20, 10, 1), sys, db, 2, 50);
+
+		// Gems, 5 gold x2 for Dwarves = 10 +50% for Miners' Guild = 15 gold, doubled = 30.  Shared one is 15 / 2 = 7 gold, doubled = 14.
+		final CityProductionBreakdown gold = productionValues.findProductionType ("RE03");
+		assertEquals (2, gold.getMapFeatureProduction ().size ());
+		for (final CityProductionBreakdownMapFeature gems : gold.getMapFeatureProduction ())
+		{
+			assertEquals ("MF01", gems.getMapFeatureID ());
+			assertEquals (1, gems.getCount ());
+			assertEquals (30, gems.getDoubleModifiedProductionAmountAllFeatures ());
+			assertEquals (gems.isShared () ? 14 : 30, gems.getDoubleProductionAmountAfterSharing ());
+			verify (cityProductionUtils).addProductionAmountToBreakdown (gold, gems.getDoubleProductionAmountAfterSharing (), null, db);
+		}
+
+		// Wild game, 2 rations, shared so get 1, doubled = 2
+		final CityProductionBreakdown rations = productionValues.findProductionType ("RE01");
+		assertEquals (1, rations.getMapFeatureProduction ().size ());
+		assertTrue (rations.getMapFeatureProduction ().get (0).isShared ());
+		assertEquals (4, rations.getMapFeatureProduction ().get (0).getDoubleModifiedProductionAmountAllFeatures ());
+		assertEquals (2, rations.getMapFeatureProduction ().get (0).getDoubleProductionAmountAfterSharing ());
+		verify (cityProductionUtils).addProductionAmountToBreakdown (rations, 2, null, db);
+
 		verifyNoMoreInteractions (cityProductionUtils);
 	}
 	
