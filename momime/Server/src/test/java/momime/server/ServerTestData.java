@@ -127,7 +127,7 @@ public class ServerTestData
 		assertNotNull (exampleResource, "MoMIMEServerVersion.properties could not be found on classpath");
 		
 		final File exampleResourceFile = new File (exampleResource.getFile ());
-		final File serverXmlFile = new File (exampleResourceFile, "../../../src/external/resources/momime.server.database/Original Master of Magic 1.31 rules.momime.xml");
+		final File serverXmlFile = new File (exampleResourceFile.getParentFile (), "../../src/external/resources/momime.server.database/Original Master of Magic 1.31 rules.momime.xml");
 		
 		final CommonDatabaseImpl serverDB = (CommonDatabaseImpl) unmarshaller.unmarshal (serverXmlFile);
 		serverDB.buildMaps ();
@@ -146,7 +146,7 @@ public class ServerTestData
 		assertNotNull (exampleResource, "MoMIMEServerVersion.properties could not be found on classpath");
 		
 		final File exampleResourceFile = new File (exampleResource.getFile ());
-		return new File (exampleResourceFile, "../../../src/external/resources/momime.server.database/Original Master of Magic 1.31 rules.momime.xml");
+		return new File (exampleResourceFile.getParentFile (), "../../src/external/resources/momime.server.database/Original Master of Magic 1.31 rules.momime.xml");
 	}
 	
 	/**

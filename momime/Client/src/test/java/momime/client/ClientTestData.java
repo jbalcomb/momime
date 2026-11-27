@@ -71,7 +71,7 @@ public class ClientTestData
 		// So instead find something that is on the classpath of the MoMIMEClient project, then modify that location
 		final URL languageXSD = getClass ().getResource (LanguageDatabaseConstants.LANGUAGES_XSD_LOCATION);
 		final File languageFile = new File (languageXSD.getFile ());
-		final File englishXmlFile = new File (languageFile, "../../../../src/external/resources/momime.client.language.database");
+		final File englishXmlFile = new File (languageFile.getParentFile (), "../../../src/external/resources/momime.client.language.database");
 
 		return englishXmlFile.getCanonicalFile ();
 	}
@@ -86,7 +86,7 @@ public class ClientTestData
 		// So instead find something that is on the classpath of the MoMIMEClient project, then modify that location
 		final URL graphicsXSD = getClass ().getResource (GraphicsDatabaseConstants.GRAPHICS_XSD_LOCATION);
 		final File graphicsFile = new File (graphicsXSD.getFile ());
-		final File graphicsXmlFile = new File (graphicsFile, "../../../../src/external/resources/momime.client.graphics.database/Graphics.momime.xml");
+		final File graphicsXmlFile = new File (graphicsFile.getParentFile (), "../../../src/external/resources/momime.client.graphics.database/Graphics.momime.xml");
 
 		return graphicsXmlFile.getCanonicalFile ();
 	}

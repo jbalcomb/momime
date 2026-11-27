@@ -1,0 +1,44 @@
+diff --git a/Client/src/test/java/momime/client/ClientTestData.java b/Client/src/test/java/momime/client/ClientTestData.java
+index f77d8ae7..f40c2a27 100644
+--- a/Client/src/test/java/momime/client/ClientTestData.java
++++ b/Client/src/test/java/momime/client/ClientTestData.java
+@@ -71,7 +71,7 @@ public class ClientTestData
+ 		// So instead find something that is on the classpath of the MoMIMEClient project, then modify that location
+ 		final URL languageXSD = getClass ().getResource (LanguageDatabaseConstants.LANGUAGES_XSD_LOCATION);
+ 		final File languageFile = new File (languageXSD.getFile ());
+-		final File englishXmlFile = new File (languageFile, "../../../../src/external/resources/momime.client.language.database");
++		final File englishXmlFile = new File (languageFile.getParentFile (), "../../../src/external/resources/momime.client.language.database");
+ 
+ 		return englishXmlFile.getCanonicalFile ();
+ 	}
+@@ -86,7 +86,7 @@ public class ClientTestData
+ 		// So instead find something that is on the classpath of the MoMIMEClient project, then modify that location
+ 		final URL graphicsXSD = getClass ().getResource (GraphicsDatabaseConstants.GRAPHICS_XSD_LOCATION);
+ 		final File graphicsFile = new File (graphicsXSD.getFile ());
+-		final File graphicsXmlFile = new File (graphicsFile, "../../../../src/external/resources/momime.client.graphics.database/Graphics.momime.xml");
++		final File graphicsXmlFile = new File (graphicsFile.getParentFile (), "../../../src/external/resources/momime.client.graphics.database/Graphics.momime.xml");
+ 
+ 		return graphicsXmlFile.getCanonicalFile ();
+ 	}
+diff --git a/Server/src/test/java/momime/server/ServerTestData.java b/Server/src/test/java/momime/server/ServerTestData.java
+index 8fb8e44e..466396d0 100644
+--- a/Server/src/test/java/momime/server/ServerTestData.java
++++ b/Server/src/test/java/momime/server/ServerTestData.java
+@@ -127,7 +127,7 @@ public class ServerTestData
+ 		assertNotNull (exampleResource, "MoMIMEServerVersion.properties could not be found on classpath");
+ 		
+ 		final File exampleResourceFile = new File (exampleResource.getFile ());
+-		final File serverXmlFile = new File (exampleResourceFile, "../../../src/external/resources/momime.server.database/Original Master of Magic 1.31 rules.momime.xml");
++		final File serverXmlFile = new File (exampleResourceFile.getParentFile (), "../../src/external/resources/momime.server.database/Original Master of Magic 1.31 rules.momime.xml");
+ 		
+ 		final CommonDatabaseImpl serverDB = (CommonDatabaseImpl) unmarshaller.unmarshal (serverXmlFile);
+ 		serverDB.buildMaps ();
+@@ -146,7 +146,7 @@ public class ServerTestData
+ 		assertNotNull (exampleResource, "MoMIMEServerVersion.properties could not be found on classpath");
+ 		
+ 		final File exampleResourceFile = new File (exampleResource.getFile ());
+-		return new File (exampleResourceFile, "../../../src/external/resources/momime.server.database/Original Master of Magic 1.31 rules.momime.xml");
++		return new File (exampleResourceFile.getParentFile (), "../../src/external/resources/momime.server.database/Original Master of Magic 1.31 rules.momime.xml");
+ 	}
+ 	
+ 	/**
