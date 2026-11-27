@@ -56,6 +56,9 @@ import momime.server.messages.MomGeneralServerKnowledge;
  */
 public final class OverlandMapServerUtilsImpl implements OverlandMapServerUtils
 {
+	/** Chance of melding with a node held by an enemy Guardian Spirit, as 1-in-this-value.  So 4 is a 25% chance. */
+	private final static int MELD_CHANCE_AGAINST_GUARDIAN_SPIRIT = 4;
+
 	/** Unit utils */
 	private UnitUtils unitUtils;
 	
@@ -230,16 +233,16 @@ public final class OverlandMapServerUtilsImpl implements OverlandMapServerUtils
 			successful = true;
 		else
 		{
-			final int attackingStrength = attackingSpirit.getModifiedSkillValue (CommonDatabaseConstants.UNIT_SKILL_ID_MELD_WITH_NODE);
-			
 			// Create test unit
 			final int defendingStrength = getSampleUnitUtils ().createSampleUnit
 				(tc.getNodeSpiritUnitID (), tc.getTerrainData ().getNodeOwnerID (), null,
 					mom.getPlayers (), mom.getGeneralServerKnowledge ().getTrueMap (), mom.getServerDB ()).getModifiedSkillValue
 						(CommonDatabaseConstants.UNIT_SKILL_ID_MELD_WITH_NODE);
-			
-			// Decide who wins
-			successful = (getRandomUtils ().nextInt (defendingStrength + attackingStrength) < attackingStrength);
+
+			// Decide who wins.  As in the original MoM 1.31, melding always succeeds against a node held by a Magic Spirit (meld value 1);
+			// it is only nodes held by a Guardian Spirit (meld value 2) that are protected, and then there's a 1 in 4 chance of success
+			// whichever kind of spirit is attempting to take it.  See wiki "Magic Spirit - Melding" / "Guardian Spirit".
+			successful = (defendingStrength <= 1) || (getRandomUtils ().nextInt (MELD_CHANCE_AGAINST_GUARDIAN_SPIRIT) == 0);
 			
 			// Defending player will be annoyed at attempt to take over one of their nodes
 			final MomPersistentPlayerPrivateKnowledge defendingPriv = (MomPersistentPlayerPrivateKnowledge) defendingPlayer.getPersistentPlayerPrivateKnowledge ();

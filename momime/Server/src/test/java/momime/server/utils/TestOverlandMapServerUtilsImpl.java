@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -554,12 +555,12 @@ public final class TestOverlandMapServerUtilsImpl extends ServerTestData
 		when (sampleUnitUtils.createSampleUnit ("MS", 3, null, players, trueMap, db)).thenReturn (xuDefendingSpirit);
 		
 		// Unit stats
-		when (xuAttackingSpirit.getModifiedSkillValue (CommonDatabaseConstants.UNIT_SKILL_ID_MELD_WITH_NODE)).thenReturn (2);
+		// Node is held by a Magic Spirit (meld value 1), so the attempt always succeeds without needing a roll
 		when (xuDefendingSpirit.getModifiedSkillValue (CommonDatabaseConstants.UNIT_SKILL_ID_MELD_WITH_NODE)).thenReturn (1);
 		
 		// Fix random result
 		final RandomUtils randomUtils = mock (RandomUtils.class);
-		when (randomUtils.nextInt (3)).thenReturn (1);		// 0-1 = Attacker wins, 2 = Defender wins
+
 
 		// Wizard opinions of each other
 		final KnownWizardUtils knownWizardUtils = mock (KnownWizardUtils.class);
@@ -622,6 +623,7 @@ public final class TestOverlandMapServerUtilsImpl extends ServerTestData
 		verify (fogOfWarMidTurnChanges).updatePlayerMemoryOfTerrain (trueTerrain, players, adjacentLocation, FogOfWarValue.REMEMBER_AS_LAST_SEEN);
 		
 		verifyNoMoreInteractions (wu);
+		verifyNoInteractions (randomUtils);
 		verifyNoMoreInteractions (fogOfWarMidTurnChanges);
 	}
 	
@@ -656,7 +658,7 @@ public final class TestOverlandMapServerUtilsImpl extends ServerTestData
 		final ServerGridCellEx nodeCell = (ServerGridCellEx) trueTerrain.getPlane ().get (1).getRow ().get (10).getCell ().get (20);
 		final OverlandMapTerrainData nodeData = new OverlandMapTerrainData ();
 		nodeData.setNodeOwnerID (3);
-		nodeCell.setNodeSpiritUnitID ("MS");
+		nodeCell.setNodeSpiritUnitID ("GS");
 		nodeCell.setTerrainData (nodeData);
 		
 		// Node aura - its a small node, the centre tile and the one map square to the right of it :)
@@ -664,7 +666,7 @@ public final class TestOverlandMapServerUtilsImpl extends ServerTestData
 		final ServerGridCellEx adjacentCell = (ServerGridCellEx) trueTerrain.getPlane ().get (1).getRow ().get (10).getCell ().get (21);
 		final OverlandMapTerrainData adjacentData = new OverlandMapTerrainData ();
 		adjacentData.setNodeOwnerID (3);
-		adjacentCell.setNodeSpiritUnitID ("MS");
+		adjacentCell.setNodeSpiritUnitID ("GS");
 		adjacentCell.setTerrainData (adjacentData);
 		adjacentCell.setAuraFromNode (nodeLocation);		
 		
@@ -705,15 +707,15 @@ public final class TestOverlandMapServerUtilsImpl extends ServerTestData
 		when (xuAttackingSpirit.getUnitURN ()).thenReturn (12);
 		
 		final ExpandedUnitDetails xuDefendingSpirit = mock (ExpandedUnitDetails.class);
-		when (sampleUnitUtils.createSampleUnit ("MS", 3, null, players, trueMap, db)).thenReturn (xuDefendingSpirit);
+		when (sampleUnitUtils.createSampleUnit ("GS", 3, null, players, trueMap, db)).thenReturn (xuDefendingSpirit);
 		
 		// Unit stats
-		when (xuAttackingSpirit.getModifiedSkillValue (CommonDatabaseConstants.UNIT_SKILL_ID_MELD_WITH_NODE)).thenReturn (2);
-		when (xuDefendingSpirit.getModifiedSkillValue (CommonDatabaseConstants.UNIT_SKILL_ID_MELD_WITH_NODE)).thenReturn (1);
+		// Node is held by a Guardian Spirit (meld value 2), so the attempt only has a 1 in 4 chance, regardless of the attacking spirit
+		when (xuDefendingSpirit.getModifiedSkillValue (CommonDatabaseConstants.UNIT_SKILL_ID_MELD_WITH_NODE)).thenReturn (2);
 		
 		// Fix random result
 		final RandomUtils randomUtils = mock (RandomUtils.class);
-		when (randomUtils.nextInt (3)).thenReturn (2);		// 0-1 = Attacker wins, 2 = Defender wins
+		when (randomUtils.nextInt (4)).thenReturn (1);		// 0 = Attacker wins, 1-3 = Defender wins
 		
 		// Wizard opinions of each other
 		final KnownWizardUtils knownWizardUtils = mock (KnownWizardUtils.class);
@@ -746,7 +748,7 @@ public final class TestOverlandMapServerUtilsImpl extends ServerTestData
 		utils.attemptToMeldWithNode (xuAttackingSpirit, mom);
 		
 		// Check results
-		assertEquals ("MS", nodeCell.getNodeSpiritUnitID ());
+		assertEquals ("GS", nodeCell.getNodeSpiritUnitID ());
 		assertEquals (defender.getPlayerDescription ().getPlayerID (), nodeData.getNodeOwnerID ());
 		assertEquals (defender.getPlayerDescription ().getPlayerID (), adjacentData.getNodeOwnerID ());
 		
