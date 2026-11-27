@@ -508,4 +508,53 @@ public final class TestPlayerMessageProcessingImpl
 		
 		verifyNoMoreInteractions (midTurn);
 	}
+
+	/**
+	 * Works out how many turns it takes to build a road, by repeatedly adding on the build rate until isRoadConstructionFinished says we're done
+	 * @param productionToBuildRoad Road building points needed for this tile type
+	 * @param totalRoadBuildingRate Total road building points per turn of all engineers working on this tile
+	 * @return Number of turns taken
+	 */
+	private final int turnsToBuildRoad (final int productionToBuildRoad, final int totalRoadBuildingRate)
+	{
+		int turns = 0;
+		int progress = 0;
+		do
+		{
+			turns++;
+			progress = progress + totalRoadBuildingRate;
+		} while (!PlayerMessageProcessingImpl.isRoadConstructionFinished (progress, productionToBuildRoad, totalRoadBuildingRate));
+		
+		return turns;
+	}
+	
+	/**
+	 * Tests the isRoadConstructionFinished method matches the table of turns to build roads on the wiki ("Roads - Construction Times"),
+	 * which is the time for 1 engineer divided by the number of engineers, rounded down, minimum 1
+	 */
+	@Test
+	public final void testIsRoadConstructionFinished ()
+	{
+		// Each row is the points needed (= turns for 1 engineer), then the expected number of turns for 1, 2, 3, 4 and 5 engineers
+		final int [] [] wikiTable =
+		{
+			{3, 3, 1, 1, 1, 1},		// Grassland
+			{4, 4, 2, 1, 1, 1},		// Desert, Sorcery node
+			{5, 5, 2, 1, 1, 1},		// River, River mouth, Nature node
+			{6, 6, 3, 2, 1, 1},		// Forest, Tundra, Hills
+			{8, 8, 4, 2, 2, 1}		// Swamp, Mountain, Volcano, Chaos node
+		};
+		
+		for (final int [] row : wikiTable)
+			for (int engineers = 1; engineers <= 5; engineers++)
+				assertEquals (row [engineers], turnsToBuildRoad (row [0], engineers), "Points needed " + row [0] + " with " + engineers + " engineers");
+		
+		// Dwarf engineers have rate 2, so 1 Dwarf Engineer over Mountains = 8 / 2 = 4 turns, and 3 Dwarf Engineers = 8 / 6 = 1 turn
+		assertEquals (4, turnsToBuildRoad (8, 2));
+		assertEquals (1, turnsToBuildRoad (8, 6));
+		
+		// Already have enough points (e.g. engineers moved away and came back) is always finished
+		assertTrue (PlayerMessageProcessingImpl.isRoadConstructionFinished (6, 6, 0));
+		assertFalse (PlayerMessageProcessingImpl.isRoadConstructionFinished (2, 6, 1));
+	}
 }

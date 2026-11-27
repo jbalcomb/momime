@@ -1103,6 +1103,24 @@ public final class PlayerMessageProcessingImpl implements PlayerMessageProcessin
 	}
 	
 	/**
+	 * In the original MoM, the number of turns to build a road is the time it would take 1 engineer, divided by the number of engineers, rounded DOWN,
+	 * with a minimum of 1 (Dwarf Engineers and Endurance count double).  So e.g. 5 engineers building over Forest (6) take 6 / 5 = 1 turn, not 2.
+	 * See wiki "Roads - Construction Times".
+	 *
+	 * We accumulate progress each turn rather than fixing the number of turns up front, so finishing after floor (needed / rate) turns means
+	 * finishing on the first turn t where (t + 1) * rate > needed, i.e. progress + rate > needed.  (Finishing when progress >= needed would round up instead.)
+	 *
+	 * @param progressSoFar Total road building points accumulated so far, including this turn
+	 * @param productionToBuildRoad Road building points needed for this tile type, i.e. how many turns it'd take 1 engineer
+	 * @param totalRoadBuildingRate Total road building points per turn of all engineers working on this tile
+	 * @return Whether the road is now finished
+	 */
+	final static boolean isRoadConstructionFinished (final int progressSoFar, final int productionToBuildRoad, final int totalRoadBuildingRate)
+	{
+		return (progressSoFar >= productionToBuildRoad) || (progressSoFar + totalRoadBuildingRate > productionToBuildRoad);
+	}
+
+	/**
 	 * Purifying corruption and building roads can take several turns
 	 *
 	 * @param onlyOnePlayerID If zero, will process special orders for all players; if specified will process special orders only for the specified player
@@ -1168,9 +1186,20 @@ public final class PlayerMessageProcessingImpl implements PlayerMessageProcessin
 						
 						gc.setRoadProductionSoFar (oldValue + skillValue);
 						
-						// Finished?
+						// Finished?  Need the total rate of all the engineers working on this tile to know
+						int totalRoadBuildingRate = 0;
+						for (final MemoryUnit tu2 : mom.getGeneralServerKnowledge ().getTrueMap ().getUnit ())
+							if ((tu2.getStatus () == UnitStatusID.ALIVE) && (tu2.getSpecialOrder () == UnitSpecialOrder.BUILD_ROAD) && (tu2.getUnitLocation ().equals (tu.getUnitLocation ())))
+							{
+								final ExpandedUnitDetails xu2 = (tu2 == tu) ? xu : getExpandUnitDetails ().expandUnitDetails (tu2, null, null, null,
+									mom.getPlayers (), mom.getGeneralServerKnowledge ().getTrueMap (), mom.getServerDB ());
+								final Integer skillValue2 = xu2.getModifiedSkillValue (CommonDatabaseConstants.UNIT_SKILL_ID_BUILD_ROAD);
+								totalRoadBuildingRate = totalRoadBuildingRate + (((skillValue2 == null) || (skillValue2 < 1)) ? 1 : skillValue2);
+							}
+
 						final TileType tileType = mom.getServerDB ().findTileType (terrainData.getTileTypeID (), "progressMultiTurnSpecialOrders");
-						if ((tileType.getProductionToBuildRoad () != null) && (gc.getRoadProductionSoFar () >= tileType.getProductionToBuildRoad ()))
+						if ((tileType.getProductionToBuildRoad () != null) &&
+							(isRoadConstructionFinished (gc.getRoadProductionSoFar (), tileType.getProductionToBuildRoad (), totalRoadBuildingRate)))
 						{
 							gc.setRoadProductionSoFar (null);
 							

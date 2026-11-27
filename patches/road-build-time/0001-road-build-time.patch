@@ -1,0 +1,112 @@
+diff --git a/Server/src/main/java/momime/server/process/PlayerMessageProcessingImpl.java b/Server/src/main/java/momime/server/process/PlayerMessageProcessingImpl.java
+index 17d3e534..1dab0b86 100644
+--- a/Server/src/main/java/momime/server/process/PlayerMessageProcessingImpl.java
++++ b/Server/src/main/java/momime/server/process/PlayerMessageProcessingImpl.java
+@@ -1102,6 +1102,24 @@ public final class PlayerMessageProcessingImpl implements PlayerMessageProcessin
+ 		}
+ 	}
+ 	
++	/**
++	 * In the original MoM, the number of turns to build a road is the time it would take 1 engineer, divided by the number of engineers, rounded DOWN,
++	 * with a minimum of 1 (Dwarf Engineers and Endurance count double).  So e.g. 5 engineers building over Forest (6) take 6 / 5 = 1 turn, not 2.
++	 * See wiki "Roads - Construction Times".
++	 *
++	 * We accumulate progress each turn rather than fixing the number of turns up front, so finishing after floor (needed / rate) turns means
++	 * finishing on the first turn t where (t + 1) * rate > needed, i.e. progress + rate > needed.  (Finishing when progress >= needed would round up instead.)
++	 *
++	 * @param progressSoFar Total road building points accumulated so far, including this turn
++	 * @param productionToBuildRoad Road building points needed for this tile type, i.e. how many turns it'd take 1 engineer
++	 * @param totalRoadBuildingRate Total road building points per turn of all engineers working on this tile
++	 * @return Whether the road is now finished
++	 */
++	final static boolean isRoadConstructionFinished (final int progressSoFar, final int productionToBuildRoad, final int totalRoadBuildingRate)
++	{
++		return (progressSoFar >= productionToBuildRoad) || (progressSoFar + totalRoadBuildingRate > productionToBuildRoad);
++	}
++
+ 	/**
+ 	 * Purifying corruption and building roads can take several turns
+ 	 *
+@@ -1168,9 +1186,20 @@ public final class PlayerMessageProcessingImpl implements PlayerMessageProcessin
+ 						
+ 						gc.setRoadProductionSoFar (oldValue + skillValue);
+ 						
+-						// Finished?
++						// Finished?  Need the total rate of all the engineers working on this tile to know
++						int totalRoadBuildingRate = 0;
++						for (final MemoryUnit tu2 : mom.getGeneralServerKnowledge ().getTrueMap ().getUnit ())
++							if ((tu2.getStatus () == UnitStatusID.ALIVE) && (tu2.getSpecialOrder () == UnitSpecialOrder.BUILD_ROAD) && (tu2.getUnitLocation ().equals (tu.getUnitLocation ())))
++							{
++								final ExpandedUnitDetails xu2 = (tu2 == tu) ? xu : getExpandUnitDetails ().expandUnitDetails (tu2, null, null, null,
++									mom.getPlayers (), mom.getGeneralServerKnowledge ().getTrueMap (), mom.getServerDB ());
++								final Integer skillValue2 = xu2.getModifiedSkillValue (CommonDatabaseConstants.UNIT_SKILL_ID_BUILD_ROAD);
++								totalRoadBuildingRate = totalRoadBuildingRate + (((skillValue2 == null) || (skillValue2 < 1)) ? 1 : skillValue2);
++							}
++
+ 						final TileType tileType = mom.getServerDB ().findTileType (terrainData.getTileTypeID (), "progressMultiTurnSpecialOrders");
+-						if ((tileType.getProductionToBuildRoad () != null) && (gc.getRoadProductionSoFar () >= tileType.getProductionToBuildRoad ()))
++						if ((tileType.getProductionToBuildRoad () != null) &&
++							(isRoadConstructionFinished (gc.getRoadProductionSoFar (), tileType.getProductionToBuildRoad (), totalRoadBuildingRate)))
+ 						{
+ 							gc.setRoadProductionSoFar (null);
+ 							
+diff --git a/Server/src/test/java/momime/server/process/TestPlayerMessageProcessingImpl.java b/Server/src/test/java/momime/server/process/TestPlayerMessageProcessingImpl.java
+index 5342ff56..312a5ad3 100644
+--- a/Server/src/test/java/momime/server/process/TestPlayerMessageProcessingImpl.java
++++ b/Server/src/test/java/momime/server/process/TestPlayerMessageProcessingImpl.java
+@@ -508,4 +508,53 @@ public final class TestPlayerMessageProcessingImpl
+ 		
+ 		verifyNoMoreInteractions (midTurn);
+ 	}
+-}
+\ No newline at end of file
++
++	/**
++	 * Works out how many turns it takes to build a road, by repeatedly adding on the build rate until isRoadConstructionFinished says we're done
++	 * @param productionToBuildRoad Road building points needed for this tile type
++	 * @param totalRoadBuildingRate Total road building points per turn of all engineers working on this tile
++	 * @return Number of turns taken
++	 */
++	private final int turnsToBuildRoad (final int productionToBuildRoad, final int totalRoadBuildingRate)
++	{
++		int turns = 0;
++		int progress = 0;
++		do
++		{
++			turns++;
++			progress = progress + totalRoadBuildingRate;
++		} while (!PlayerMessageProcessingImpl.isRoadConstructionFinished (progress, productionToBuildRoad, totalRoadBuildingRate));
++		
++		return turns;
++	}
++	
++	/**
++	 * Tests the isRoadConstructionFinished method matches the table of turns to build roads on the wiki ("Roads - Construction Times"),
++	 * which is the time for 1 engineer divided by the number of engineers, rounded down, minimum 1
++	 */
++	@Test
++	public final void testIsRoadConstructionFinished ()
++	{
++		// Each row is the points needed (= turns for 1 engineer), then the expected number of turns for 1, 2, 3, 4 and 5 engineers
++		final int [] [] wikiTable =
++		{
++			{3, 3, 1, 1, 1, 1},		// Grassland
++			{4, 4, 2, 1, 1, 1},		// Desert, Sorcery node
++			{5, 5, 2, 1, 1, 1},		// River, River mouth, Nature node
++			{6, 6, 3, 2, 1, 1},		// Forest, Tundra, Hills
++			{8, 8, 4, 2, 2, 1}		// Swamp, Mountain, Volcano, Chaos node
++		};
++		
++		for (final int [] row : wikiTable)
++			for (int engineers = 1; engineers <= 5; engineers++)
++				assertEquals (row [engineers], turnsToBuildRoad (row [0], engineers), "Points needed " + row [0] + " with " + engineers + " engineers");
++		
++		// Dwarf engineers have rate 2, so 1 Dwarf Engineer over Mountains = 8 / 2 = 4 turns, and 3 Dwarf Engineers = 8 / 6 = 1 turn
++		assertEquals (4, turnsToBuildRoad (8, 2));
++		assertEquals (1, turnsToBuildRoad (8, 6));
++		
++		// Already have enough points (e.g. engineers moved away and came back) is always finished
++		assertTrue (PlayerMessageProcessingImpl.isRoadConstructionFinished (6, 6, 0));
++		assertFalse (PlayerMessageProcessingImpl.isRoadConstructionFinished (2, 6, 1));
++	}
++}
