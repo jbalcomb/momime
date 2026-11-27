@@ -39,6 +39,7 @@ import momime.common.utils.TargetSpellResult;
 import momime.common.utils.UnitUtils;
 import momime.server.MomSessionVariables;
 import momime.server.fogofwar.FogOfWarMidTurnMultiChanges;
+import momime.server.fogofwar.KillUnitActionID;
 import momime.server.knowledge.CombatDetails;
 import momime.server.utils.CombatMapServerUtils;
 import momime.server.utils.UnitAddLocation;
@@ -275,13 +276,32 @@ public final class CombatHandlingImpl implements CombatHandling
 		final Map<CombatFleeChance, List<ExpandedUnitDetails>> chances = getCombatFleeUtils ().determineChanceOfFleeing
 			(combatDetails.getCombatLocation (), playerID, mom.getPlayers (), mom.getGeneralServerKnowledge ().getTrueMap (), mom.getServerDB ());
 		
+		// Combat summons like Phantom Warriors only exist for the duration of the battle, so they never escape to the overland map.
+		// Otherwise, taking them out of combat here means purgeDeadUnitsAndCombatSummonsFromCombat no longer finds them at the
+		// combat location when the combat ends, and they'd become permanent overland units.  So instead they're simply dispelled.
+		// This applies whether they'd have made their roll to flee or not - otherwise a player whose real units all escaped could be left
+		// stuck in a combat with only summons that can't leave it.
+		// (Units brought back with Raise Dead or Animate Dead are not combat summons - they become permanent units, so can flee like any other.)
+		boolean anySummonsDispelled = false;
+		for (final List<ExpandedUnitDetails> units : chances.values ())
+			for (final ExpandedUnitDetails xu : units)
+				if (xu.wasSummonedInCombat ())
+				{
+					log.debug ("Combat summon unit URN " + xu.getUnitURN () + " is dispelled as its side flees from combat");
+					mom.getWorldUpdates ().killUnit (xu.getUnitURN (), KillUnitActionID.PERMANENT_DAMAGE);
+					anySummonsDispelled = true;
+				}
+
+		if (anySummonsDispelled)
+			mom.getWorldUpdates ().process (mom);
+
 		// Make rolls for each unit
 		for (final Entry<CombatFleeChance, List<ExpandedUnitDetails>> chance : chances.entrySet ())
 			if (chance.getKey () != CombatFleeChance.CANNOT_FLEE)
 				for (final ExpandedUnitDetails xu : chance.getValue ())
-					
+
 					// Make roll to flee or not
-					if ((chance.getKey () == CombatFleeChance.EASILY_FLEE) || (getRandomUtils ().nextInt (CHANCE_TO_FLEE) == 0))
+					if ((!xu.wasSummonedInCombat ()) && ((chance.getKey () == CombatFleeChance.EASILY_FLEE) || (getRandomUtils ().nextInt (CHANCE_TO_FLEE) == 0)))
 					{
 						boolean unitFlees = true;
 						MapCoordinates3DEx unitFleesTo = null;
